@@ -6,15 +6,15 @@
 > A security-focused fork and rewrite of
 > [supermemoryai/apple-mcp](https://github.com/supermemoryai/apple-mcp) (MIT).
 
-**Status:** M2 (permission system) complete — on top of working Calendar +
-Reminders (M1, native Swift EventKit helper; structured JSON on stdin, no
-script text anywhere on the data path): `capabilities_*` meta tools with a
-human-approval queue, an optional **remote Streamable HTTP transport** with
-OAuth 2.1 (audience-validated) or API-key auth, a hard-minimal remote surface
-(high-risk modules never exposed remotely; writes require explicit opt-in),
-and a stable code-signing identity for the helper's TCC grants. Next: M3
-(Contacts, Notes). See [`DESIGN.md`](./DESIGN.md) for the full architecture
-and [`CLAUDE.md`](./CLAUDE.md) for build guidance.
+**Status:** M3 complete — **four working modules**: Calendar + Reminders
+(Swift EventKit helper), Contacts (Swift Contacts.framework helper, its own
+revocable TCC subject), and Notes (fixed JXA template; data on stdin, never
+in script source). Plus the M2 permission system: `capabilities_*` meta tools
+with a human-approval queue, an optional remote Streamable HTTP transport
+with OAuth 2.1 (audience-validated) or API-key auth, and a hard-minimal
+remote surface. Next: M4 (Mail, Messages — high-risk, FDA isolation). See
+[`DESIGN.md`](./DESIGN.md) for the full architecture and
+[`CLAUDE.md`](./CLAUDE.md) for build guidance.
 
 ## Why another Apple MCP?
 

@@ -7,6 +7,23 @@ the MCP spec's date-based protocol versioning).
 
 ## [Unreleased]
 ### Added
+- M3 expansion — Contacts and Notes modules:
+  - `contacts-helper` (Swift, Contacts.framework): separate binary = its own
+    revocable TCC subject; search/get/create over the same NDJSON protocol;
+    the contact note field is deliberately untouched (needs an entitlement).
+  - Notes via a FIXED JXA template (`native/notes-jxa/notes.js`) run by
+    osascript with constant argv; requests arrive as parsed JSON on stdin and
+    never become script source. Body text is entity-escaped inside the
+    template (presentation encoding); the transport layer carries it verbatim.
+    Ops: list folders/notes, search, read body, create.
+  - Generic `HelperProcessClient` shared by all native helpers; per-helper
+    clients with fixed binary paths and argv.
+  - `scripts/build-native.sh` builds + ad-hoc signs every helper with stable
+    identifiers; the CI static injection guard now also scans the JXA source.
+  - Injection suite extended to contacts/notes serializers; module tests with
+    fake backends; JXA runner protocol tests against a stub interpreter plus
+    a real-osascript ping (no Apple Events); opt-in read-only integration
+    tests for Contacts and Notes.
 - M2 permission system:
   - `capabilities_list` / `capabilities_request_enable` meta tools: the model
     can inspect the module matrix and queue enable requests, which only take

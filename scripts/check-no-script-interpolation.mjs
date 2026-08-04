@@ -7,7 +7,8 @@
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join, extname } from "node:path";
 
-const ROOTS = ["src", "cli"];
+// notes-jxa is executable JXA source — the guard must cover it too.
+const ROOTS = ["src", "cli", "native/notes-jxa"];
 const BAD = [
   // `runAppleScript(` ... ${...}
   /runAppleScript\s*\(\s*`[^`]*\$\{/s,

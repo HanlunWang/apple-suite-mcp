@@ -74,17 +74,27 @@ describe("EventKitHelperClient (against the fake helper)", () => {
   });
 });
 
-describe("real eventkit-helper protocol (no TCC required)", () => {
-  const REAL = join(
+describe("real helper protocols (no TCC required)", () => {
+  const EVENTKIT = join(
     import.meta.dirname, "..", "..",
     "native", "eventkit-helper", ".build", "release", "eventkit-helper",
   );
+  const CONTACTS = join(
+    import.meta.dirname, "..", "..",
+    "native", "contacts-helper", ".build", "release", "contacts-helper",
+  );
 
-  it("answers ping", { skip: !existsSync(REAL) && "helper not built" }, async () => {
-    const client = makeClient();
-    const real = new EventKitHelperClient(REAL);
+  it("eventkit-helper answers ping", { skip: !existsSync(EVENTKIT) && "helper not built" }, async () => {
+    const real = new EventKitHelperClient(EVENTKIT);
     clients.push(real);
-    client.close();
+    const pong = await real.call<{ pong: boolean; version: string }>("ping");
+    assert.equal(pong.pong, true);
+  });
+
+  it("contacts-helper answers ping", { skip: !existsSync(CONTACTS) && "helper not built" }, async () => {
+    const { ContactsHelperClient } = await import("../../src/native/contacts.ts");
+    const real = new ContactsHelperClient(CONTACTS);
+    clients.push(real);
     const pong = await real.call<{ pong: boolean; version: string }>("ping");
     assert.equal(pong.pong, true);
   });

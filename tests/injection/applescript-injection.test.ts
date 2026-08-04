@@ -33,6 +33,8 @@ import {
   serializeCreateReminder,
   serializeListReminders,
 } from "../../src/modules/reminders/backend.ts";
+import { serializeCreateContact, serializeSearchContacts } from "../../src/modules/contacts/backend.ts";
+import { serializeCreateNote, serializeSearchNotes } from "../../src/modules/notes/backend.ts";
 
 /** Payloads that broke naive `"` -> `\"` escaping in the upstream repo.
  *  (Written with explicit \\ escapes — String.raw`...\` does not end where it
@@ -140,6 +142,36 @@ describe("all serializer boundaries carry payloads as inert data", () => {
       assert.equal(wire.args["title"], payload);
       assert.equal(wire.args["notes"], payload);
       forEachKey(req, (k) => assert.ok(!FORBIDDEN_KEYS.test(k)));
+    });
+
+    it(`contacts create+search: ${label}…`, () => {
+      const create = serializeCreateContact({
+        givenName: payload,
+        organization: payload,
+        emails: [{ value: payload }],
+      });
+      assert.equal(create.op, "contacts.create");
+      const wire = JSON.parse(JSON.stringify(create)) as typeof create;
+      assert.equal(wire.args["givenName"], payload);
+      assert.equal((wire.args["emails"] as Array<{ value: string }>)[0]?.value, payload);
+      forEachKey(create, (k) => assert.ok(!FORBIDDEN_KEYS.test(k)));
+
+      const search = serializeSearchContacts({ query: payload });
+      assert.equal(JSON.parse(JSON.stringify(search)).args.query, payload);
+    });
+
+    it(`notes create+search (transport carries body verbatim): ${label}…`, () => {
+      const create = serializeCreateNote({ title: payload, body: payload });
+      assert.equal(create.op, "notes.create");
+      const wire = JSON.parse(JSON.stringify(create)) as typeof create;
+      // HTML escaping is presentation-layer work inside the FIXED JXA
+      // template; the transport layer must not rewrite anything.
+      assert.equal(wire.args["title"], payload);
+      assert.equal(wire.args["body"], payload);
+      forEachKey(create, (k) => assert.ok(!FORBIDDEN_KEYS.test(k)));
+
+      const search = serializeSearchNotes({ query: payload });
+      assert.equal(JSON.parse(JSON.stringify(search)).args.query, payload);
     });
   }
 

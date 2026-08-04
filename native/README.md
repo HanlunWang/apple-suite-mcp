@@ -6,7 +6,8 @@ revoke each permission independently, and confines Full Disk Access to Messages.
 
 Status:
 - `eventkit-helper/`  — Swift, EventKit (Calendar + Reminders)    ✅ M1
-- `contacts-helper/`  — Swift, Contacts.framework                 planned (M3)
+- `contacts-helper/`  — Swift, Contacts.framework                 ✅ M3
+- `notes-jxa/`        — fixed JXA template run by osascript       ✅ M3
 - `messages-helper/`  — chat.db (needs FDA, isolated)             planned (M4)
 
 ## Contract
@@ -42,3 +43,26 @@ Ops: `ping` (no TCC — used by CI), `calendar.list_calendars`,
 The helper requests Calendar/Reminders access lazily on the first data
 operation; `ping` and startup never trigger a TCC prompt. The binary refuses
 to run with any argv other than the fixed `--json-stdin` contract.
+
+## contacts-helper
+
+Same protocol and build flow. Ops: `ping`, `contacts.search`, `contacts.get`,
+`contacts.create`. The contact note field is deliberately not supported (it
+requires the `com.apple.developer.contacts.notes` entitlement).
+
+## notes-jxa (scripting backend)
+
+Notes has no public framework, so it is driven by a **fixed JXA template**
+(`notes-jxa/notes.js`) executed as `osascript -l JavaScript notes.js` with the
+request JSON on stdin (single-shot, same wire format). The template is a
+constant scanned by the CI injection guard; untrusted data only ever appears
+as parsed JSON values and JXA property values. Note bodies are entity-escaped
+inside the template before being handed to Notes (which stores HTML).
+
+Ops: `ping` (no Apple Events — CI-safe), `notes.list_folders`, `notes.list`,
+`notes.search`, `notes.get`, `notes.create`.
+
+**TCC caveat:** Apple Events sent by osascript are attributed to the process
+tree that runs the MCP server, so the Automation prompt names your terminal or
+Claude app — not a helper binary. A compiled applet wrapper (own TCC subject,
+like the Swift helpers) is planned for M5 polish.
