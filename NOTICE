@@ -1,0 +1,21 @@
+apple-suite-mcp
+===============
+
+This project is a fork and substantial rewrite of:
+
+    supermemoryai/apple-mcp
+    https://github.com/supermemoryai/apple-mcp
+    Copyright (c) 2025 Dhravya Shah and contributors
+    Licensed under the MIT License.
+
+Significant changes from upstream:
+  - Security rewrite: structured native backend replaces AppleScript string
+    interpolation (eliminates the injection class).
+  - Capability model: modules disabled by default, opt-in per module, read/write
+    separation, isolated TCC-responsible helper for Full Disk Access.
+  - MCP 2025-11-25 compliance: Streamable HTTP + OAuth 2.1, Resources/Tools/Prompts
+    split, elicitation-based confirmation, structured output.
+  - Supply-chain hardening: pinned dependencies, provenance, SBOM.
+
+The MIT license text and copyright notice above are retained per the terms of
+the upstream license.

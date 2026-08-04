@@ -1,0 +1,22 @@
+name: CI
+on:
+  push: { branches: [main] }
+  pull_request:
+jobs:
+  build-test:
+    runs-on: macos-14   # native EventKit/Contacts + integration need macOS
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: "24" }   # node:test runs TS directly (>= 22.6)
+      - run: npm ci
+      - name: Typecheck + build
+        run: npm run build
+      - name: Static injection guard
+        run: npm run lint
+      - name: Security bottom line (injection suite)
+        run: npm run test:injection
+      - name: Full test suite
+        run: npm test
+      - name: Dependency audit
+        run: npm run audit

@@ -1,0 +1,10 @@
+node_modules/
+dist/
+*.log
+.DS_Store
+# never commit the prebuilt bundle; it is a CI artifact only (DESIGN.md §5.2)
+*.dxt
+# local config may contain enabled-module state; keep out of VCS
+.apple-mcp/
+coverage/
+native/**/.build/

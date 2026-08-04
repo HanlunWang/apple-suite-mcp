@@ -1,0 +1,47 @@
+{
+  "name": "apple-suite-mcp",
+  "version": "0.0.0",
+  "description": "Secure, modular, opt-in MCP connector for the Apple app suite (Calendar, Reminders, Contacts, Notes, Mail, Messages, Maps, Photos, Music).",
+  "type": "module",
+  "license": "MIT",
+  "author": "Hanlun Wang",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/HanlunWang/apple-suite-mcp.git"
+  },
+  "bin": {
+    "apple-mcp": "./dist/cli/index.js"
+  },
+  "files": [
+    "dist",
+    "NOTICE",
+    "LICENSE",
+    "README.md"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "dev": "node src/server.ts",
+    "start": "node dist/src/server.js",
+    "test": "node --test \"tests/**/*.test.ts\"",
+    "test:injection": "node --test \"tests/injection/*.test.ts\"",
+    "lint": "node scripts/check-no-script-interpolation.mjs",
+    "audit": "npm audit --audit-level=moderate"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "1.30.0",
+    "zod": "4.4.3"
+  },
+  "devDependencies": {
+    "@types/node": "22.13.4",
+    "typescript": "5.7.3"
+  },
+  "//": [
+    "Deps pinned to exact versions (no ^/~, no @latest) per DESIGN.md §5.2. Update deliberately, verify provenance.",
+    "better-sqlite3 will be added in M4 (messages module) — not before it is needed.",
+    "Tests use the Node built-in test runner (node:test) — zero extra dev dependencies. Running TS directly needs Node >= 22.6 (CI uses 24); the published dist runs on >= 20."
+  ]
+}
