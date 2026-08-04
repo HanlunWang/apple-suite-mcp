@@ -22,7 +22,9 @@
     "node": ">=20"
   },
   "scripts": {
-    "build": "tsc -p tsconfig.json",
+    "build": "npm run build:ts && npm run build:native",
+    "build:ts": "tsc -p tsconfig.json",
+    "build:native": "swift build --package-path native/eventkit-helper -c release",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "dev": "node src/server.ts",
     "start": "node dist/src/server.js",

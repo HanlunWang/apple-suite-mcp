@@ -27,7 +27,12 @@ import {
   HELPER_ARGV,
   buildHelperInvocation,
   serializeCreateEvent,
+  serializeUpdateEvent,
 } from "../../src/modules/calendar/backend.ts";
+import {
+  serializeCreateReminder,
+  serializeListReminders,
+} from "../../src/modules/reminders/backend.ts";
 
 /** Payloads that broke naive `"` -> `\"` escaping in the upstream repo.
  *  (Written with explicit \\ escapes — String.raw`...\` does not end where it
@@ -72,7 +77,7 @@ describe("untrusted data never reaches executable script/shell text", () => {
 
       // 1) Output is structured data, not a string of script text.
       assert.equal(typeof request, "object");
-      assert.equal(request.op, "create_event");
+      assert.equal(request.op, "calendar.create_event");
 
       // 2) No field carries executable script text (by name).
       forEachKey(request, (key) => {
@@ -111,5 +116,36 @@ describe("untrusted data never reaches executable script/shell text", () => {
     );
     assert.throws(() => serializeCreateEvent({ title: "", start: "2026-01-01T10:00:00Z", end: "2026-01-01T11:00:00Z" }));
     assert.throws(() => serializeCreateEvent(null));
+  });
+});
+
+describe("all serializer boundaries carry payloads as inert data", () => {
+  const START = "2026-01-01T10:00:00Z";
+  const END = "2026-01-01T11:00:00Z";
+
+  for (const payload of MALICIOUS_INPUTS) {
+    const label = JSON.stringify(payload).slice(0, 40);
+
+    it(`update_event notes: ${label}…`, () => {
+      const req = serializeUpdateEvent({ id: "evt-1", notes: payload });
+      assert.equal(req.op, "calendar.update_event");
+      assert.equal(JSON.parse(JSON.stringify(req)).args.notes, payload);
+      forEachKey(req, (k) => assert.ok(!FORBIDDEN_KEYS.test(k)));
+    });
+
+    it(`create_reminder title+notes: ${label}…`, () => {
+      const req = serializeCreateReminder({ title: payload, notes: payload, due: START });
+      assert.equal(req.op, "reminders.create");
+      const wire = JSON.parse(JSON.stringify(req)) as typeof req;
+      assert.equal(wire.args["title"], payload);
+      assert.equal(wire.args["notes"], payload);
+      forEachKey(req, (k) => assert.ok(!FORBIDDEN_KEYS.test(k)));
+    });
+  }
+
+  it("list inputs validate shape without rewriting content", () => {
+    assert.throws(() => serializeListReminders({ limit: 10_000 }));
+    const req = serializeCreateEvent({ title: "ok", start: START, end: END });
+    assert.equal(req.args["title"], "ok");
   });
 });

@@ -10,8 +10,22 @@ jobs:
       - uses: actions/setup-node@v4
         with: { node-version: "24" }   # node:test runs TS directly (>= 22.6)
       - run: npm ci
-      - name: Typecheck + build
+      - name: Typecheck + build (TS + Swift helper)
         run: npm run build
+      - name: Helper protocol smoke (no TCC needed)
+        run: |
+          printf '%s\n' '{"id":1,"op":"ping"}' \
+            | ./native/eventkit-helper/.build/release/eventkit-helper --json-stdin \
+            | grep -q '"pong":true'
+      - name: Dist server smoke (dynamic module registration)
+        run: |
+          export APPLE_MCP_CONFIG_DIR=$(mktemp -d)
+          node dist/cli/index.js enable calendar --write
+          printf '%s\n' \
+            '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18","capabilities":{},"clientInfo":{"name":"ci","version":"0"}}}' \
+            '{"jsonrpc":"2.0","method":"notifications/initialized"}' \
+            '{"jsonrpc":"2.0","id":2,"method":"tools/list"}' \
+            | node dist/src/server.js | grep -q calendar_create_event
       - name: Static injection guard
         run: npm run lint
       - name: Security bottom line (injection suite)

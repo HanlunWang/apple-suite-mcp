@@ -56,10 +56,12 @@ async function main(): Promise<void> {
 // Only start when executed directly (not when imported by tests/CLI).
 if (import.meta.url === `file://${process.argv[1]}`) {
   main().catch((err: unknown) => {
+    // Log under "error"/"hint" — the "message" key is redacted by design
+    // (it is reserved for user-content fields like message bodies).
     if (err instanceof ConfigError) {
-      logger.error("server.config_error", { message: err.message, hint: err.hint });
+      logger.error("server.config_error", { error: err.message, hint: err.hint });
     } else {
-      logger.error("server.fatal", { message: (err as Error).message });
+      logger.error("server.fatal", { error: (err as Error).message });
     }
     process.exit(1);
   });

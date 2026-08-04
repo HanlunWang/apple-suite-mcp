@@ -32,9 +32,20 @@ export type ModuleLoader = () => Promise<AppModule>;
  * Lazy loaders — a module's code is only imported once it is enabled.
  * Filled in as milestones land (M1: calendar, reminders; M3: contacts, notes; …).
  */
+// tsc's rewriteRelativeImportExtensions does not rewrite dynamic import()
+// specifiers, so derive the extension (.ts in dev, .js in dist) from how this
+// file itself is running.
+const EXT = import.meta.url.slice(import.meta.url.lastIndexOf("."));
+
 export const MODULE_LOADERS: Partial<Record<ModuleId, ModuleLoader>> = {
-  // M1: calendar: async () => (await import("./modules/calendar/module.ts")).default,
-  // M1: reminders: async () => (await import("./modules/reminders/module.ts")).default,
+  calendar: async () =>
+    (
+      (await import(`./modules/calendar/module${EXT}`)) as typeof import("./modules/calendar/module.ts")
+    ).createCalendarModule(),
+  reminders: async () =>
+    (
+      (await import(`./modules/reminders/module${EXT}`)) as typeof import("./modules/reminders/module.ts")
+    ).createRemindersModule(),
 };
 
 export interface RegistrationSummary {

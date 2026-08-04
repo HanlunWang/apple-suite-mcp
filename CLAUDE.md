@@ -7,8 +7,10 @@ code**.
 ## Your task
 
 Implement this MCP server following the roadmap in `DESIGN.md` §8 (M0→M5).
-**M0 (foundation) is complete**; the current milestone is **M1 (security
-core: eventkit-helper + calendar/reminders)**.
+**M0 (foundation) and M1 (security core: eventkit-helper +
+calendar/reminders) are complete**; the current milestone is **M2
+(permission system: per-domain TCC packaging, `manage_capabilities`,
+remote Streamable HTTP + OAuth 2.1 restrictions)**.
 
 ## Non-negotiable security invariants (violations are bugs)
 
@@ -54,11 +56,16 @@ M0 exit criteria (all met):
 - [x] CI green (typecheck/test/audit/static injection rule; tests run on
       `node:test`, no bun dependency)
 
-Current M1 scope: implement the eventkit-helper (Swift; the stdin JSON
-contract is described in `native/README.md` and by `HelperInvocation` in
-`src/modules/calendar/backend.ts`) plus the calendar/reminders modules
-(implement the `AppModule` contract, then add loaders to `MODULE_LOADERS` in
-`src/registry.ts`).
+M1 exit criteria (all met): eventkit-helper (Swift, NDJSON contract in
+`native/README.md`), calendar/reminders modules implementing the `AppModule`
+contract and wired into `MODULE_LOADERS`, deletion behind elicitation,
+injection suite green across all serializer boundaries, CI building and
+smoke-testing the helper. Real-EventKit integration tests are opt-in via
+`APPLE_MCP_INTEGRATION=1` (they trigger TCC prompts and touch real data).
+
+M2 scope: per-domain TCC packaging, optional `manage_capabilities` meta tool,
+remote Streamable HTTP transport with OAuth 2.1 (audience validation,
+`allowRemoteWrite` gating).
 
 ## Commands
 

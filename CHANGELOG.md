@@ -7,6 +7,25 @@ the MCP spec's date-based protocol versioning).
 
 ## [Unreleased]
 ### Added
+- M1 security core — Calendar and Reminders modules working end-to-end:
+  - `eventkit-helper` (Swift, EventKit): resident NDJSON-over-stdio process,
+    its own TCC subject, lazy permission requests, structured error codes
+    with actionable hints, fixed `--json-stdin` argv contract (data never in
+    argv), `ping` op for TCC-free health checks.
+  - Resident helper client (lazy spawn on first call, id-matched concurrent
+    requests, timeouts with permission-dialog hints, automatic respawn after
+    a crash); one shared process serves both modules.
+  - Calendar module: list calendars/events, create/update/delete event;
+    reminders module: list lists/reminders, create/complete/delete. Read and
+    write tools split; deletion gated behind elicitation confirmation
+    (`*.delete`); read results carry the `_untrusted` marker; described zod
+    schemas with range limits on every parameter.
+  - Injection suite extended across all serializer boundaries (calendar +
+    reminders); module tests over an in-memory MCP connection prove the
+    helper is never reached without confirmation; protocol tests run against
+    a fake helper plus a TCC-free `ping` against the real binary; real
+    EventKit integration tests are opt-in via `APPLE_MCP_INTEGRATION=1`.
+  - CI builds the Swift helper and smoke-tests the wire protocol.
 - M0 scaffold: design doc, capability config schema, module contract,
   injection regression suite, CI with injection gate, OSS health files.
 - M0 implementation:

@@ -6,12 +6,13 @@
 > A security-focused fork and rewrite of
 > [supermemoryai/apple-mcp](https://github.com/supermemoryai/apple-mcp) (MIT).
 
-**Status:** M0 (foundation) complete — capability config, three-gate framework,
-dynamic registration, CLI, elicitation confirmation gate, and the injection
-regression suite are in place; no app modules are wired to the OS yet (M1 starts
-with Calendar/Reminders via a native EventKit helper). See
-[`DESIGN.md`](./DESIGN.md) for the full architecture and [`CLAUDE.md`](./CLAUDE.md)
-for build guidance.
+**Status:** M1 (security core) complete — **Calendar and Reminders work
+end-to-end** through a native Swift EventKit helper (structured JSON on stdin,
+no script text anywhere on the data path), on top of the M0 foundation:
+capability config, three-gate framework, dynamic registration, CLI,
+elicitation confirmation, and the injection regression suite. Next: M2
+(permission system polish, remote OAuth 2.1). See [`DESIGN.md`](./DESIGN.md)
+for the full architecture and [`CLAUDE.md`](./CLAUDE.md) for build guidance.
 
 ## Why another Apple MCP?
 
@@ -74,10 +75,17 @@ Requires Node ≥ 22.6 to run TS directly (CI uses 24); the built `dist/` runs o
 
 ```bash
 npm ci
-npm run build          # typecheck + compile
+npm run build          # compile TS + build the Swift eventkit-helper
 npm run lint           # static injection guard
 npm test               # node:test — includes the injection regression suite
 npm run dev            # stdio server
+```
+
+Integration tests against the real EventKit stores (they trigger a macOS
+permission prompt and touch your default calendar/reminder list) are opt-in:
+
+```bash
+APPLE_MCP_INTEGRATION=1 npm test
 ```
 
 ## Security
