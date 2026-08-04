@@ -6,13 +6,15 @@
 > A security-focused fork and rewrite of
 > [supermemoryai/apple-mcp](https://github.com/supermemoryai/apple-mcp) (MIT).
 
-**Status:** M1 (security core) complete — **Calendar and Reminders work
-end-to-end** through a native Swift EventKit helper (structured JSON on stdin,
-no script text anywhere on the data path), on top of the M0 foundation:
-capability config, three-gate framework, dynamic registration, CLI,
-elicitation confirmation, and the injection regression suite. Next: M2
-(permission system polish, remote OAuth 2.1). See [`DESIGN.md`](./DESIGN.md)
-for the full architecture and [`CLAUDE.md`](./CLAUDE.md) for build guidance.
+**Status:** M2 (permission system) complete — on top of working Calendar +
+Reminders (M1, native Swift EventKit helper; structured JSON on stdin, no
+script text anywhere on the data path): `capabilities_*` meta tools with a
+human-approval queue, an optional **remote Streamable HTTP transport** with
+OAuth 2.1 (audience-validated) or API-key auth, a hard-minimal remote surface
+(high-risk modules never exposed remotely; writes require explicit opt-in),
+and a stable code-signing identity for the helper's TCC grants. Next: M3
+(Contacts, Notes). See [`DESIGN.md`](./DESIGN.md) for the full architecture
+and [`CLAUDE.md`](./CLAUDE.md) for build guidance.
 
 ## Why another Apple MCP?
 
@@ -68,6 +70,40 @@ apple-mcp disable mail
 Changes apply on server **restart** (deliberate — a running session cannot be
 coerced into enabling capabilities). Config lives at `~/.apple-mcp/config.json`,
 created locked-down (everything disabled) on first run.
+
+The model can *queue* an enable request via the `capabilities_request_enable`
+tool, but it only becomes real when you approve it:
+
+```bash
+apple-mcp pending            # see what the model asked for
+apple-mcp approve calendar   # apply it (FDA modules re-prompt for acknowledgement)
+apple-mcp reject calendar    # or discard it
+```
+
+## Remote access (optional)
+
+The default transport is stdio (no network exposure). To serve Claude over
+HTTP, switch `transport` in the config to Streamable HTTP:
+
+```jsonc
+// ~/.apple-mcp/config.json
+"transport": {
+  "type": "http",
+  "auth": "oauth2.1",              // or "apikey" (key auto-generated, 0600)
+  "bind": "127.0.0.1",             // expose further only behind your own TLS proxy
+  "port": 8765,
+  "allowRemoteWrite": false,        // remote sessions are read-only by default
+  "oauth": {
+    "issuer": "https://your-authorization-server.example",
+    "audience": "https://your-host.example/mcp"   // tokens for anything else are rejected
+  }
+}
+```
+
+Remote sessions always get a reduced surface: Mail and Messages are **never**
+registered over HTTP, write tools require `allowRemoteWrite: true`, and every
+request must carry a bearer token (JWT verified against the authorization
+server's JWKS with strict issuer + audience checks, per RFC 8414/9728).
 
 ## Develop
 

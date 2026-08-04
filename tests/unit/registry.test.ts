@@ -78,20 +78,31 @@ async function connect(
   return { client, server };
 }
 
+/** Module tools only — the always-on capabilities_* meta tools are covered
+ *  in capabilities.test.ts. */
+const moduleTools = (names: string[]) => names.filter((n) => !n.startsWith("capabilities_"));
+
 describe("registration-time gating", () => {
-  it("disabled module: client sees ZERO tools and resources", async () => {
+  it("disabled module: client sees only the meta tools, zero module surface", async () => {
     const { client } = await connect(); // default config: all disabled
-    const tools = await client.listTools();
-    assert.deepEqual(tools.tools, []);
+    const names = (await client.listTools()).tools.map((t) => t.name).sort();
+    assert.deepEqual(names, ["capabilities_list", "capabilities_request_enable"]);
     const templates = await client.listResourceTemplates();
     assert.deepEqual(templates.resourceTemplates, []);
+  });
+
+  it("capabilityTools=false: truly zero tools", async () => {
+    const cfg = defaultConfig();
+    cfg.capabilityTools = false;
+    const { client } = await connect(cfg);
+    assert.deepEqual((await client.listTools()).tools, []);
   });
 
   it("read mode: read tools + resources visible, write tools absent", async () => {
     const cfg = defaultConfig();
     cfg.modules.calendar = { enabled: true, mode: "read" };
     const { client } = await connect(cfg);
-    const names = (await client.listTools()).tools.map((t) => t.name);
+    const names = moduleTools((await client.listTools()).tools.map((t) => t.name));
     assert.deepEqual(names, ["calendar_list_events"]);
     const templates = await client.listResourceTemplates();
     assert.equal(templates.resourceTemplates.length, 1);
@@ -101,7 +112,7 @@ describe("registration-time gating", () => {
     const cfg = defaultConfig();
     cfg.modules.calendar = { enabled: true, mode: "write" };
     const { client } = await connect(cfg);
-    const names = (await client.listTools()).tools.map((t) => t.name).sort();
+    const names = moduleTools((await client.listTools()).tools.map((t) => t.name)).sort();
     assert.deepEqual(names, ["calendar_delete_event", "calendar_list_events"]);
   });
 

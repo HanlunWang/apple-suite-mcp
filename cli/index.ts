@@ -13,6 +13,7 @@
  */
 
 import { createInterface } from "node:readline/promises";
+import { loadPending, savePending } from "../src/capabilities.ts";
 import {
   type AppConfig,
   FDA_MODULES,
@@ -31,6 +32,9 @@ Usage:
   apple-mcp status                       Show module matrix + config path
   apple-mcp enable <module> [--write]    Enable a module (read-only by default)
   apple-mcp disable <module>             Disable a module
+  apple-mcp pending                      Show enable requests queued by the model
+  apple-mcp approve <module>             Approve a pending request
+  apple-mcp reject <module>              Discard a pending request
   apple-mcp help                         Show this help
 
 Modules: ${MODULE_IDS.join(", ")}
@@ -132,6 +136,48 @@ async function main(): Promise<void> {
       cfg.modules[id] = { enabled: false, mode: "read" };
       saveConfig(cfg);
       process.stdout.write(`disabled ${id}. Restart the server to apply.\n`);
+      return;
+    }
+
+    case "pending": {
+      const pending = loadPending();
+      const entries = Object.entries(pending.requests);
+      if (entries.length === 0) {
+        process.stdout.write("no pending enable requests\n");
+        return;
+      }
+      for (const [id, req] of entries) {
+        const fda = FDA_MODULES.has(id as ModuleId) ? "  [Full Disk Access]" : "";
+        process.stdout.write(`  ${id.padEnd(10)} ${req.mode.padEnd(5)} requested ${req.requestedAt}${fda}\n`);
+      }
+      process.stdout.write('\nApprove with "apple-mcp approve <module>" or discard with "apple-mcp reject <module>".\n');
+      return;
+    }
+
+    case "approve": {
+      const id = requireModuleId(args[0]);
+      const pending = loadPending();
+      const req = pending.requests[id];
+      if (!req) fail(`no pending request for "${id}" (see "apple-mcp pending")`);
+      if (FDA_MODULES.has(id)) await acknowledgeFda(id, flags.has("--yes"));
+      const cfg = loadConfig();
+      cfg.modules[id] = { enabled: true, mode: req.mode };
+      saveConfig(cfg);
+      delete pending.requests[id];
+      savePending(pending);
+      process.stdout.write(
+        `approved ${id} (${req.mode === "write" ? "read/write" : "read-only"}). Restart the server to apply.\n`,
+      );
+      return;
+    }
+
+    case "reject": {
+      const id = requireModuleId(args[0]);
+      const pending = loadPending();
+      if (!pending.requests[id]) fail(`no pending request for "${id}"`);
+      delete pending.requests[id];
+      savePending(pending);
+      process.stdout.write(`rejected pending request for ${id}.\n`);
       return;
     }
 

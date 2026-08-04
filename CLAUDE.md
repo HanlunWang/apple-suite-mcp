@@ -7,10 +7,11 @@ code**.
 ## Your task
 
 Implement this MCP server following the roadmap in `DESIGN.md` §8 (M0→M5).
-**M0 (foundation) and M1 (security core: eventkit-helper +
-calendar/reminders) are complete**; the current milestone is **M2
-(permission system: per-domain TCC packaging, `manage_capabilities`,
-remote Streamable HTTP + OAuth 2.1 restrictions)**.
+**M0 (foundation), M1 (security core: eventkit-helper + calendar/reminders),
+and M2 (permission system: capabilities meta tools + CLI approval, remote
+Streamable HTTP with OAuth 2.1/API-key auth, remote minimal surface, helper
+code-signing) are complete**; the current milestone is **M3 (Contacts +
+Notes modules)**.
 
 ## Non-negotiable security invariants (violations are bugs)
 
@@ -63,9 +64,17 @@ injection suite green across all serializer boundaries, CI building and
 smoke-testing the helper. Real-EventKit integration tests are opt-in via
 `APPLE_MCP_INTEGRATION=1` (they trigger TCC prompts and touch real data).
 
-M2 scope: per-domain TCC packaging, optional `manage_capabilities` meta tool,
-remote Streamable HTTP transport with OAuth 2.1 (audience validation,
-`allowRemoteWrite` gating).
+M2 exit criteria (all met): `capabilities_list`/`capabilities_request_enable`
+meta tools with pending-queue + CLI approve/reject (FDA acknowledgement
+preserved), Streamable HTTP transport (loopback default, DNS-rebinding
+protection, per-session servers), OAuth 2.1 resource server with strict
+issuer+audience validation plus API-key mode, remote minimal surface
+(REMOTE_BLOCKED_MODULES never registered remotely; writes need
+allowRemoteWrite), helper code-signed with a stable TCC identifier.
+
+M3 scope: contacts-helper (Swift, Contacts.framework) + contacts module;
+notes module via JXA scripting-helper (fixed script templates, data through
+argv/stdin only — never concatenated into source).
 
 ## Commands
 

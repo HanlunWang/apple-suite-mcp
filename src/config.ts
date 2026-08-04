@@ -37,22 +37,62 @@ export function isModuleId(id: string): id is ModuleId {
  *  TCC-responsible helper process (see DESIGN.md §3.5). */
 export const FDA_MODULES: ReadonlySet<ModuleId> = new Set(["messages"]);
 
+/** High-risk modules that are NEVER exposed over the remote (HTTP) transport,
+ *  regardless of configuration (DESIGN.md §4: minimal remote surface). */
+export const REMOTE_BLOCKED_MODULES: ReadonlySet<ModuleId> = new Set(["mail", "messages"]);
+
 export const ModuleConfig = z.object({
   enabled: z.boolean().default(false),
   mode: z.enum(["read", "write"]).default("read"),
 });
 export type ModuleConfig = z.infer<typeof ModuleConfig>;
 
+export const OAuthConfig = z.object({
+  /** Authorization server issuer URL. Must be https (or http on localhost) —
+   *  a malicious endpoint URL is an attack vector (cf. CVE-2025-6514). */
+  issuer: z.url(),
+  /** Expected token audience — the canonical URI of THIS server. Tokens with
+   *  any other audience are rejected (confused-deputy defense). */
+  audience: z.string().min(1),
+});
+export type OAuthConfig = z.infer<typeof OAuthConfig>;
+
+const isLoopbackHost = (host: string) =>
+  host === "localhost" || host === "127.0.0.1" || host === "::1";
+
 export const TransportConfig = z.discriminatedUnion("type", [
   z.object({ type: z.literal("stdio") }),
-  z.object({
-    type: z.literal("http"),
-    // Remote transport is Streamable HTTP; auth defaults to OAuth 2.1.
-    auth: z.enum(["oauth2.1", "apikey"]).default("oauth2.1"),
-    bind: z.string().default("127.0.0.1"),
-    // High-risk surface is closed to remote by default (DESIGN.md §4).
-    allowRemoteWrite: z.boolean().default(false),
-  }),
+  z
+    .object({
+      type: z.literal("http"),
+      // Remote transport is Streamable HTTP; auth defaults to OAuth 2.1.
+      auth: z.enum(["oauth2.1", "apikey"]).default("oauth2.1"),
+      bind: z.string().default("127.0.0.1"),
+      port: z.number().int().min(0).max(65535).default(8765),
+      // High-risk surface is closed to remote by default (DESIGN.md §4).
+      allowRemoteWrite: z.boolean().default(false),
+      oauth: OAuthConfig.optional(),
+    })
+    .superRefine((t, ctx) => {
+      if (t.auth === "oauth2.1") {
+        if (!t.oauth) {
+          ctx.addIssue({
+            code: "custom",
+            path: ["oauth"],
+            message: 'auth "oauth2.1" requires transport.oauth { issuer, audience }',
+          });
+        } else {
+          const u = new URL(t.oauth.issuer);
+          if (u.protocol !== "https:" && !isLoopbackHost(u.hostname)) {
+            ctx.addIssue({
+              code: "custom",
+              path: ["oauth", "issuer"],
+              message: "oauth issuer must use https (http allowed for localhost only)",
+            });
+          }
+        }
+      }
+    }),
 ]);
 export type TransportConfig = z.infer<typeof TransportConfig>;
 
@@ -67,6 +107,9 @@ export const AppConfig = z.object({
     "messages.send",
     "*.delete",
   ]),
+  /** Register the capabilities_* meta tools (DESIGN.md §3.4). They expose no
+   *  app data; enable-requests still require CLI approval + restart. */
+  capabilityTools: z.boolean().default(true),
   transport: TransportConfig.default({ type: "stdio" }),
   rateLimits: z
     .object({

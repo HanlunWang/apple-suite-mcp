@@ -24,7 +24,7 @@
   "scripts": {
     "build": "npm run build:ts && npm run build:native",
     "build:ts": "tsc -p tsconfig.json",
-    "build:native": "swift build --package-path native/eventkit-helper -c release",
+    "build:native": "swift build --package-path native/eventkit-helper -c release && codesign --force -s - --identifier io.github.hanlunwang.apple-suite-mcp.eventkit-helper native/eventkit-helper/.build/release/eventkit-helper",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "dev": "node src/server.ts",
     "start": "node dist/src/server.js",
@@ -35,6 +35,7 @@
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "1.30.0",
+    "jose": "6.2.8",
     "zod": "4.4.3"
   },
   "devDependencies": {

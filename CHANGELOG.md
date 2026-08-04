@@ -7,6 +7,23 @@ the MCP spec's date-based protocol versioning).
 
 ## [Unreleased]
 ### Added
+- M2 permission system:
+  - `capabilities_list` / `capabilities_request_enable` meta tools: the model
+    can inspect the module matrix and queue enable requests, which only take
+    effect after `apple-mcp approve <module>` (FDA acknowledgement preserved)
+    and a server restart. New CLI commands: `pending`, `approve`, `reject`.
+  - Remote transport: Streamable HTTP (single `/mcp` endpoint, loopback bind
+    by default, DNS-rebinding Host allowlist, cryptographically random
+    session ids, per-session server instances, RFC 9728 protected-resource
+    metadata, RFC 6750 `WWW-Authenticate` challenges).
+  - Auth: OAuth 2.1 resource server (JWT via the authorization server's JWKS,
+    strict issuer + **audience** validation — tokens minted for other services
+    are rejected) or a locally generated API key (0600, constant-time compare).
+  - Remote minimal surface: Mail/Messages are never registered over HTTP;
+    write tools degrade to read unless `allowRemoteWrite: true`; the
+    enable-request meta tool is local-only.
+  - eventkit-helper is now ad-hoc code-signed with a stable identifier so TCC
+    grants survive rebuilds.
 - M1 security core — Calendar and Reminders modules working end-to-end:
   - `eventkit-helper` (Swift, EventKit): resident NDJSON-over-stdio process,
     its own TCC subject, lazy permission requests, structured error codes

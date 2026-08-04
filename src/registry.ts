@@ -14,10 +14,12 @@ import {
   ListResourcesRequestSchema,
   ListToolsRequestSchema,
 } from "@modelcontextprotocol/sdk/types.js";
+import { registerCapabilityTools } from "./capabilities.ts";
 import {
   type AppConfig,
   MODULE_IDS,
   type ModuleId,
+  REMOTE_BLOCKED_MODULES,
   isModuleEnabled,
   needsConfirmation,
 } from "./config.ts";
@@ -54,11 +56,21 @@ export interface RegistrationSummary {
   resources: string[];
 }
 
+export interface RegisterOptions {
+  /** True for sessions arriving over the remote (HTTP) transport. Remote
+   *  sessions get the minimal surface (DESIGN.md §4): high-risk modules are
+   *  never registered, and write mode requires allowRemoteWrite. */
+  remote?: boolean;
+}
+
 export async function registerEnabledModules(
   server: McpServer,
   cfg: AppConfig,
   loaders: Partial<Record<ModuleId, ModuleLoader>> = MODULE_LOADERS,
+  opts: RegisterOptions = {},
 ): Promise<RegistrationSummary> {
+  const remote = opts.remote === true;
+  const allowRemoteWrite = cfg.transport.type === "http" && cfg.transport.allowRemoteWrite;
   const summary: RegistrationSummary = { modules: [], tools: [], resources: [] };
   const perTool = new SlidingWindowLimiter(cfg.rateLimits.perToolPerMinute);
   const perSession = new SlidingWindowLimiter(cfg.rateLimits.perSessionPerMinute);
@@ -67,8 +79,16 @@ export async function registerEnabledModules(
   // clients can list (empty) instead of getting "method not found".
   server.server.registerCapabilities({ tools: { listChanged: false }, resources: {} });
 
+  if (cfg.capabilityTools) {
+    summary.tools.push(...registerCapabilityTools(server, cfg, { remote }));
+  }
+
   for (const id of MODULE_IDS) {
     if (!isModuleEnabled(cfg, id)) continue;
+    if (remote && REMOTE_BLOCKED_MODULES.has(id)) {
+      logger.warn("registry.remote_blocked", { module: id });
+      continue;
+    }
     const loader = loaders[id];
     if (!loader) {
       logger.warn("registry.module_not_implemented", { module: id });
@@ -76,7 +96,8 @@ export async function registerEnabledModules(
     }
 
     const mod = await loader();
-    const mode = cfg.modules[id]?.mode ?? "read";
+    const configuredMode = cfg.modules[id]?.mode ?? "read";
+    const mode = remote && !allowRemoteWrite ? "read" : configuredMode;
     summary.modules.push(id);
 
     for (const res of mod.resources(mode)) {

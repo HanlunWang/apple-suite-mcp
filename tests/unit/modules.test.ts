@@ -89,7 +89,10 @@ describe("calendar + reminders modules", () => {
   it("read mode exposes only read tools; enabling spawns no helper call", async () => {
     const helper = new FakeHelper();
     const client = await connect({ mode: "read", helper });
-    const names = (await client.listTools()).tools.map((t) => t.name).sort();
+    const names = (await client.listTools()).tools
+      .map((t) => t.name)
+      .filter((n) => !n.startsWith("capabilities_"))
+      .sort();
     assert.deepEqual(names, [
       "calendar_list_calendars",
       "calendar_list_events",
