@@ -40,6 +40,9 @@ import {
   serializeSearchMessages,
   serializeSendMessage,
 } from "../../src/modules/messages/backend.ts";
+import { serializeSearchPlaces } from "../../src/modules/maps/backend.ts";
+import { serializeSearchTracks } from "../../src/modules/music/backend.ts";
+import { serializeRunShortcut } from "../../src/modules/shortcuts/backend.ts";
 
 /** Payloads that broke naive `"` -> `\"` escaping in the upstream repo.
  *  (Written with explicit \\ escapes — String.raw`...\` does not end where it
@@ -188,6 +191,23 @@ describe("all serializer boundaries carry payloads as inert data", () => {
 
       const search = serializeSearchMessages({ query: payload });
       assert.equal(JSON.parse(JSON.stringify(search)).args.query, payload);
+    });
+
+    it(`maps/music/shortcuts serializers: ${label}…`, () => {
+      const maps = serializeSearchPlaces({ query: payload });
+      assert.equal(maps.op, "maps.search");
+      assert.equal(JSON.parse(JSON.stringify(maps)).args.query, payload);
+      forEachKey(maps, (k) => assert.ok(!FORBIDDEN_KEYS.test(k)));
+
+      const music = serializeSearchTracks({ query: payload });
+      assert.equal(JSON.parse(JSON.stringify(music)).args.query, payload);
+
+      const shortcut = serializeRunShortcut({ name: payload, input: payload });
+      assert.equal(shortcut.op, "shortcuts.run");
+      const wire = JSON.parse(JSON.stringify(shortcut)) as typeof shortcut;
+      assert.equal(wire.args["name"], payload);
+      assert.equal(wire.args["input"], payload);
+      forEachKey(shortcut, (k) => assert.ok(!FORBIDDEN_KEYS.test(k)));
     });
 
     it(`notes create+search (transport carries body verbatim): ${label}…`, () => {

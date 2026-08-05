@@ -1,13 +1,13 @@
 {
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-11-25/server.schema.json",
   "name": "io.github.HanlunWang/apple-suite-mcp",
-  "description": "Secure, modular, opt-in MCP connector for the Apple app suite.",
-  "version": "0.0.0",
+  "description": "Secure, modular, opt-in MCP connector for the Apple app suite. Everything is disabled by default; capabilities are enabled one at a time from the CLI.",
+  "version": "1.0.0",
   "packages": [
     {
       "registryType": "npm",
       "identifier": "apple-suite-mcp",
-      "version": "0.0.0",
+      "version": "1.0.0",
       "transport": { "type": "stdio" }
     }
   ],

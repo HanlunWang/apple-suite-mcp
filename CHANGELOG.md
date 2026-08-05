@@ -5,7 +5,49 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 Versioning: [SemVer](https://semver.org/) for the npm package (independent of
 the MCP spec's date-based protocol versioning).
 
-## [Unreleased]
+## [1.0.0] — 2026-08-05
+
+First stable release. Ten Apple app modules, all disabled by default, each
+enabled one at a time from the CLI; no untrusted data ever reaches script,
+shell, or SQL text.
+
+### Added
+- M5 modules and release engineering:
+  - **Maps** (`maps-helper`, Swift/MapKit): place search and route summaries.
+    Read-only, no macOS permission required; never looks up the user's own
+    location (anchors come from the request), tools carry `openWorldHint`.
+  - **Photos** (`photos-helper`, Swift/PhotosKit, own TCC subject): album and
+    asset METADATA only — no pixel data is read or returned, nothing is ever
+    modified or deleted.
+  - **Music** (fixed JXA template): now-playing, library search, and playback
+    controls. Controls are writes but touch no user data and send nothing, so
+    they are non-destructive and unconfirmed.
+  - **Shortcuts** (`/usr/bin/shortcuts` via `execFile`, array argv, no shell):
+    list and run. Running arbitrary user automation is high-risk, so
+    `shortcuts.run` is in the default requireConfirmation list and the module
+    is remote-blocked. New injection suite proves hostile shortcut names reach
+    the process as a single inert argv entry (no expansion or substitution)
+    and that shortcut input travels on stdin, never argv.
+  - Read cache: short-TTL (default 10s) per module+tool+args, invalidated
+    immediately by any write to the same module (DESIGN.md §7.2). Configurable
+    via `cache.readTtlSeconds` / `cache.maxEntries`; 0 disables it.
+  - Release engineering: version 1.0.0 across package.json / server.json /
+    server identity, npm `files` ships the Swift sources and JXA templates so
+    `npm run build:native` compiles and signs helpers locally (prebuilt
+    binaries are never committed or published), package keywords for registry
+    discovery.
+
+### Notes
+- Ten modules total: calendar, reminders, contacts, notes, mail, messages,
+  maps, photos, music, shortcuts. 174 tests, including four injection
+  regression suites (AppleScript/JXA serializers, SQL, shortcuts argv).
+- Known limitation: Apple Events from `osascript` are attributed to the host
+  process, so Automation prompts for the JXA-backed modules (notes, mail,
+  messages send, music) name your terminal or Claude app rather than a
+  dedicated helper binary. The Swift helpers each have their own revocable
+  TCC identity.
+
+## [0.x] — pre-release milestones
 ### Added
 - M4 high-risk modules — Mail and Messages:
   - Mail via a fixed JXA template (unread/search read; send write). `mail_send`

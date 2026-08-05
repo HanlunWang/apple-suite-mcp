@@ -8,7 +8,14 @@ import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join, extname } from "node:path";
 
 // The JXA templates are executable source — the guard must cover them too.
-const ROOTS = ["src", "cli", "native/notes-jxa", "native/mail-jxa", "native/messages-jxa"];
+const ROOTS = [
+  "src",
+  "cli",
+  "native/notes-jxa",
+  "native/mail-jxa",
+  "native/messages-jxa",
+  "native/music-jxa",
+];
 const BAD = [
   // `runAppleScript(` ... ${...}
   /runAppleScript\s*\(\s*`[^`]*\$\{/s,

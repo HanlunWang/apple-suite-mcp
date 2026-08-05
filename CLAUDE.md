@@ -6,12 +6,17 @@ code**.
 
 ## Your task
 
-Implement this MCP server following the roadmap in `DESIGN.md` §8 (M0→M5).
-**M0–M4 are complete** (foundation; eventkit security core; permission
-system + remote transport; Contacts + Notes; Mail + Messages with an
-FDA-isolated sqlite child, confirmation-gated sends, remote-blocked). The
-current milestone is **M5 (Maps / Photos / Music / Shortcuts, performance,
-caching, MCPB packaging, `server.json` publication, SBOM + signing → 1.0)**.
+The roadmap in `DESIGN.md` §8 (M0→M5) is **complete — the project is at
+1.0.0** with ten modules: calendar, reminders, contacts, notes, mail,
+messages, maps, photos, music, shortcuts.
+
+Work from here is maintenance and follow-ups, not new milestones:
+- MCPB packaging (bundled local server; the sanctioned distribution form for
+  OS-level MCP servers) and npm publication with provenance + SBOM.
+- A compiled applet wrapper for the JXA-backed modules so Automation prompts
+  name a dedicated helper instead of the host process (see `native/README.md`).
+- New modules follow the same contract: `src/modules/_template/`, a serializer
+  boundary with an injection-suite entry, and a loader in `MODULE_LOADERS`.
 
 ## Non-negotiable security invariants (violations are bugs)
 

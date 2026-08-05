@@ -14,6 +14,7 @@ import {
   ListResourcesRequestSchema,
   ListToolsRequestSchema,
 } from "@modelcontextprotocol/sdk/types.js";
+import { ReadCache } from "./cache.ts";
 import { registerCapabilityTools } from "./capabilities.ts";
 import {
   type AppConfig,
@@ -64,6 +65,22 @@ export const MODULE_LOADERS: Partial<Record<ModuleId, ModuleLoader>> = {
     (
       (await import(`./modules/messages/module${EXT}`)) as typeof import("./modules/messages/module.ts")
     ).createMessagesModule(),
+  maps: async () =>
+    (
+      (await import(`./modules/maps/module${EXT}`)) as typeof import("./modules/maps/module.ts")
+    ).createMapsModule(),
+  photos: async () =>
+    (
+      (await import(`./modules/photos/module${EXT}`)) as typeof import("./modules/photos/module.ts")
+    ).createPhotosModule(),
+  music: async () =>
+    (
+      (await import(`./modules/music/module${EXT}`)) as typeof import("./modules/music/module.ts")
+    ).createMusicModule(),
+  shortcuts: async () =>
+    (
+      (await import(`./modules/shortcuts/module${EXT}`)) as typeof import("./modules/shortcuts/module.ts")
+    ).createShortcutsModule(),
 };
 
 export interface RegistrationSummary {
@@ -90,6 +107,7 @@ export async function registerEnabledModules(
   const summary: RegistrationSummary = { modules: [], tools: [], resources: [] };
   const perTool = new SlidingWindowLimiter(cfg.rateLimits.perToolPerMinute);
   const perSession = new SlidingWindowLimiter(cfg.rateLimits.perSessionPerMinute);
+  const cache = new ReadCache(cfg.cache.readTtlSeconds, cfg.cache.maxEntries);
 
   // Advertise tools/resources capabilities even with zero modules enabled, so
   // clients can list (empty) instead of getting "method not found".
@@ -149,7 +167,7 @@ export async function registerEnabledModules(
 
     const tools = mod.tools(mode).filter((t) => t.mode === "read" || mode === "write");
     for (const tool of tools) {
-      registerTool(server, cfg, tool, { perTool, perSession });
+      registerTool(server, cfg, tool, { perTool, perSession, cache, module: id });
       summary.tools.push(tool.name);
     }
   }
@@ -179,8 +197,14 @@ function registerTool(
   server: McpServer,
   cfg: AppConfig,
   tool: ToolDef,
-  limits: { perTool: SlidingWindowLimiter; perSession: SlidingWindowLimiter },
+  ctx: {
+    perTool: SlidingWindowLimiter;
+    perSession: SlidingWindowLimiter;
+    cache: ReadCache;
+    module: ModuleId;
+  },
 ): void {
+  const limits = ctx;
   const confirmable = needsConfirmation(cfg, tool.actionId);
   if (confirmable && !tool.confirmPreview) {
     // A confirmable tool without a human-readable preview cannot present an
@@ -216,7 +240,27 @@ function registerTool(
         if (confirmable) {
           await confirmOrThrow(server, tool.actionId, tool.confirmPreview!(args));
         }
+
+        if (tool.mode === "read") {
+          const cached = ctx.cache.get(ctx.module, tool.name, args);
+          if (cached !== undefined) {
+            logger.debug("tool.cache_hit", { tool: tool.name });
+            return {
+              content: [{ type: "text" as const, text: JSON.stringify(cached) }],
+              structuredContent: cached as Record<string, unknown>,
+            };
+          }
+        }
+
         const result = await tool.run(args, { signal: extra.signal });
+
+        if (tool.mode === "read") {
+          ctx.cache.set(ctx.module, tool.name, args, result);
+        } else {
+          // Any write invalidates this module's cached reads immediately.
+          ctx.cache.invalidateModule(ctx.module);
+        }
+
         return {
           content: [{ type: "text" as const, text: JSON.stringify(result) }],
           structuredContent: result as Record<string, unknown>,

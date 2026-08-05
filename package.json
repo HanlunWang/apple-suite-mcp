@@ -1,7 +1,19 @@
 {
   "name": "apple-suite-mcp",
-  "version": "0.0.0",
-  "description": "Secure, modular, opt-in MCP connector for the Apple app suite (Calendar, Reminders, Contacts, Notes, Mail, Messages, Maps, Photos, Music).",
+  "version": "1.0.0",
+  "description": "Secure, modular, opt-in MCP connector for the Apple app suite (Calendar, Reminders, Contacts, Notes, Mail, Messages, Maps, Photos, Music, Shortcuts).",
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "apple",
+    "macos",
+    "calendar",
+    "reminders",
+    "contacts",
+    "notes",
+    "imessage",
+    "claude"
+  ],
   "type": "module",
   "license": "MIT",
   "author": "Hanlun Wang",
@@ -14,9 +26,14 @@
   },
   "files": [
     "dist",
+    "native/*/Package.swift",
+    "native/*/Sources",
     "native/notes-jxa",
     "native/mail-jxa",
     "native/messages-jxa",
+    "native/music-jxa",
+    "native/README.md",
+    "scripts/build-native.sh",
     "NOTICE",
     "LICENSE",
     "README.md"
@@ -49,7 +66,7 @@
   },
   "//": [
     "Deps pinned to exact versions (no ^/~, no @latest) per DESIGN.md §5.2. Update deliberately, verify provenance.",
-    "better-sqlite3 will be added in M4 (messages module) — not before it is needed.",
-    "Tests use the Node built-in test runner (node:test) — zero extra dev dependencies. Running TS directly needs Node >= 22.6 (CI uses 24); the published dist runs on >= 20."
+    "Tests use the Node built-in test runner (node:test) — zero extra dev dependencies. Running TS directly needs Node >= 22.6 (CI uses 24); the published dist runs on >= 20.",
+    "Swift helper sources ship in the package so `npm run build:native` can compile + sign them locally; prebuilt binaries are never committed or published."
   ]
 }

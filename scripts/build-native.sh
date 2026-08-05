@@ -5,7 +5,7 @@ set -eu
 
 sign_id_prefix="io.github.hanlunwang.apple-suite-mcp"
 
-for helper in eventkit-helper contacts-helper; do
+for helper in eventkit-helper contacts-helper maps-helper photos-helper; do
   echo "==> building ${helper}"
   swift build --package-path "native/${helper}" -c release
   codesign --force -s - \

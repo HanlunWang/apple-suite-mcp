@@ -4,13 +4,17 @@ Each sensitive domain is a **separate compiled executable** so it becomes its
 own TCC-responsible process (DESIGN.md §2, §3.5). This lets macOS show and
 revoke each permission independently, and confines Full Disk Access to Messages.
 
-Status:
-- `eventkit-helper/`  — Swift, EventKit (Calendar + Reminders)    ✅ M1
-- `contacts-helper/`  — Swift, Contacts.framework                 ✅ M3
-- `notes-jxa/`        — fixed JXA template run by osascript       ✅ M3
-- `mail-jxa/`         — fixed JXA template run by osascript       ✅ M4
-- `messages-jxa/`     — fixed JXA send template                   ✅ M4
-- messages reads      — sqlite child (`src/native/messages-helper-child`, FDA) ✅ M4
+Backends:
+- `eventkit-helper/`  — Swift, EventKit (Calendar + Reminders)
+- `contacts-helper/`  — Swift, Contacts.framework
+- `maps-helper/`      — Swift, MapKit (no TCC subject; reaches Apple's map service)
+- `photos-helper/`    — Swift, PhotosKit (metadata only, read-only)
+- `notes-jxa/`        — fixed JXA template run by osascript
+- `mail-jxa/`         — fixed JXA template run by osascript
+- `messages-jxa/`     — fixed JXA send template
+- `music-jxa/`        — fixed JXA template (library + playback control)
+- messages reads      — sqlite child (`src/native/messages-helper-child`, FDA)
+- shortcuts           — `/usr/bin/shortcuts` via execFile (`src/native/shortcuts.ts`)
 
 ## Contract
 
@@ -52,6 +56,20 @@ Same protocol and build flow. Ops: `ping`, `contacts.search`, `contacts.get`,
 `contacts.create`. The contact note field is deliberately not supported (it
 requires the `com.apple.developer.contacts.notes` entitlement).
 
+## maps-helper
+
+Same protocol and build flow. Ops: `ping`, `maps.search`, `maps.directions`.
+Needs no TCC permission, but MapKit does query Apple's map service — the only
+outbound traffic in the project besides the modules' own APIs. The helper
+never looks up the user's own location; search anchors come from the request.
+
+## photos-helper
+
+Same protocol and build flow. Ops: `ping`, `photos.list_albums`,
+`photos.list`. Its own TCC subject (Photos), requested lazily. Returns
+METADATA only — no image data is read or transmitted, and nothing in the
+library is ever modified or deleted.
+
 ## notes-jxa (scripting backend)
 
 Notes has no public framework, so it is driven by a **fixed JXA template**
@@ -68,6 +86,23 @@ Ops: `ping` (no Apple Events — CI-safe), `notes.list_folders`, `notes.list`,
 tree that runs the MCP server, so the Automation prompt names your terminal or
 Claude app — not a helper binary. A compiled applet wrapper (own TCC subject,
 like the Swift helpers) is planned for M5 polish.
+
+## music-jxa
+
+Same fixed-template contract. Ops: `ping`, `music.now_playing`,
+`music.search`, `music.play` / `pause` / `next` / `previous`,
+`music.play_track`. Playback control has audible side effects but touches no
+user data and sends nothing, so it needs no confirmation.
+
+## shortcuts (CLI, not a helper binary)
+
+`/usr/bin/shortcuts` is invoked with `execFile` and an ARRAY argv — no shell,
+so metacharacters in a shortcut name are inert. Documented exception to the
+"data never in argv" rule: the CLI takes the shortcut NAME as an argument and
+offers no stdin alternative; only the name travels in argv, while shortcut
+INPUT goes through stdin (`-i -`). `tests/injection/shortcuts-argv.test.ts`
+pins this. Running a shortcut executes user-authored automation with the
+user's full privileges, so it is confirmation-gated and remote-blocked.
 
 ## mail-jxa / messages-jxa (high-risk scripting backends)
 

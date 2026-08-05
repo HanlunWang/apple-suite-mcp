@@ -1,22 +1,31 @@
 # apple-suite-mcp
 
 > Secure, modular, **opt-in** MCP connector for the Apple app suite — Calendar,
-> Reminders, Contacts, Notes, Mail, Messages, Maps, Photos, Music.
+> Reminders, Contacts, Notes, Mail, Messages, Maps, Photos, Music, Shortcuts.
 >
 > A security-focused fork and rewrite of
 > [supermemoryai/apple-mcp](https://github.com/supermemoryai/apple-mcp) (MIT).
 
-**Status:** M4 complete — **six working modules**: Calendar, Reminders,
-Contacts (Swift native helpers), Notes, Mail (fixed JXA templates), and
-Messages. Messages is the high-risk case: reads go through an **FDA-isolated
-child process** that queries `chat.db` with parameterized SQLite (the server
-process never opens the file), and sending goes through a fixed JXA template.
-Mail and Messages sends always pass an elicitation confirmation, both modules
-require the CLI Full-Disk-Access acknowledgement where relevant, and neither
-is ever exposed over the remote transport. On top of the M2 permission system
-(`capabilities_*` meta tools, remote Streamable HTTP + OAuth 2.1 / API-key,
-minimal remote surface). Next: M5 (Maps/Photos/Music, polish, 1.0 release).
-See [`DESIGN.md`](./DESIGN.md) and [`CLAUDE.md`](./CLAUDE.md).
+**Status: 1.0.0** — all ten modules implemented, everything disabled by
+default. See [`DESIGN.md`](./DESIGN.md) for the architecture and
+[`CLAUDE.md`](./CLAUDE.md) for development guidance.
+
+## Modules
+
+| Module | Backend | macOS permission | Writes |
+|---|---|---|---|
+| Calendar | Swift · EventKit | Calendars | create / update / delete (delete confirmed) |
+| Reminders | Swift · EventKit | Reminders | create / complete / delete (delete confirmed) |
+| Contacts | Swift · Contacts.framework | Contacts | create |
+| Notes | fixed JXA template | Automation | create |
+| Mail | fixed JXA template | Automation | **send (always confirmed)** |
+| Messages | sqlite child (reads) + JXA (send) | **Full Disk Access** | **send (always confirmed)** |
+| Maps | Swift · MapKit | none | — |
+| Photos | Swift · PhotosKit | Photos | — (metadata only) |
+| Music | fixed JXA template | Automation | playback controls |
+| Shortcuts | `shortcuts` CLI (`execFile`, no shell) | per shortcut | **run (always confirmed)** |
+
+Mail, Messages, and Shortcuts are never exposed over the remote transport.
 
 ## Why another Apple MCP?
 
@@ -29,7 +38,7 @@ feature surface with a much smaller attack surface:
 |---|---|---|
 | Backend | AppleScript string concat | structured native helper (no script text) |
 | Permissions | all at once | **disabled by default**, opt-in per module |
-| Full Disk Access | required together | isolated to the Messages helper only |
+| Full Disk Access | required together | isolated to the Messages read child process |
 | Updates | `@latest` auto | pinned versions + provenance + SBOM |
 | Side-effects | none | elicitation confirmation |
 | MCP spec | — | 2025-11-25 (Streamable HTTP + OAuth 2.1) |
@@ -44,20 +53,33 @@ feature surface with a much smaller attack surface:
   to a Swift/JXA helper, never concatenated into executable script text. Enforced
   by `tests/injection/` and a CI static guard.
 
-## Install (once released)
+## Install
 
 > Do **not** use `@latest` or `--no-cache`. Pin a version.
+
+```bash
+git clone https://github.com/HanlunWang/apple-suite-mcp.git
+cd apple-suite-mcp
+npm ci
+npm run build          # compiles TypeScript + builds and signs the Swift helpers
+```
+
+Then point your MCP client at the built server (absolute path, no auto-update):
 
 ```jsonc
 {
   "mcpServers": {
     "apple-suite": {
-      "command": "npx",
-      "args": ["apple-suite-mcp@0.1.0"]   // pin the version
+      "command": "node",
+      "args": ["/absolute/path/to/apple-suite-mcp/dist/src/server.js"]
     }
   }
 }
 ```
+
+Nothing is exposed until you enable a module — see below. Building the Swift
+helpers requires the Xcode command line tools; the JXA-backed modules (notes,
+mail, messages send, music) need no build step.
 
 ## Capability control
 

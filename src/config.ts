@@ -25,6 +25,7 @@ export const MODULE_IDS = [
   "maps",
   "photos",
   "music",
+  "shortcuts",
 ] as const;
 
 export type ModuleId = (typeof MODULE_IDS)[number];
@@ -38,8 +39,13 @@ export function isModuleId(id: string): id is ModuleId {
 export const FDA_MODULES: ReadonlySet<ModuleId> = new Set(["messages"]);
 
 /** High-risk modules that are NEVER exposed over the remote (HTTP) transport,
- *  regardless of configuration (DESIGN.md §4: minimal remote surface). */
-export const REMOTE_BLOCKED_MODULES: ReadonlySet<ModuleId> = new Set(["mail", "messages"]);
+ *  regardless of configuration (DESIGN.md §4: minimal remote surface).
+ *  shortcuts runs arbitrary user-authored automation, so it is local-only. */
+export const REMOTE_BLOCKED_MODULES: ReadonlySet<ModuleId> = new Set([
+  "mail",
+  "messages",
+  "shortcuts",
+]);
 
 export const ModuleConfig = z.object({
   enabled: z.boolean().default(false),
@@ -105,6 +111,7 @@ export const AppConfig = z.object({
   requireConfirmation: z.array(z.string()).default([
     "mail.send",
     "messages.send",
+    "shortcuts.run",
     "*.delete",
   ]),
   /** Register the capabilities_* meta tools (DESIGN.md §3.4). They expose no
@@ -117,6 +124,14 @@ export const AppConfig = z.object({
       perSessionPerMinute: z.number().int().positive().default(120),
     })
     .default({ perToolPerMinute: 30, perSessionPerMinute: 120 }),
+  /** Short-lived cache for read-only tool results, invalidated on any write
+   *  in the same module (DESIGN.md §7.2). 0 disables caching. */
+  cache: z
+    .object({
+      readTtlSeconds: z.number().int().min(0).max(300).default(10),
+      maxEntries: z.number().int().min(1).max(1000).default(100),
+    })
+    .default({ readTtlSeconds: 10, maxEntries: 100 }),
 });
 export type AppConfig = z.infer<typeof AppConfig>;
 

@@ -34,7 +34,12 @@ describe("defaults", () => {
       assert.equal(cfg.modules[id]?.mode, "read");
     }
     assert.equal(cfg.transport.type, "stdio");
-    assert.deepEqual(cfg.requireConfirmation, ["mail.send", "messages.send", "*.delete"]);
+    assert.deepEqual(cfg.requireConfirmation, [
+      "mail.send",
+      "messages.send",
+      "shortcuts.run",
+      "*.delete",
+    ]);
   });
 });
 
