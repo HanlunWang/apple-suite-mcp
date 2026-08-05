@@ -1,0 +1,26 @@
+name: DCO
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+permissions:
+  contents: read
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }
+      - name: Every commit carries a Signed-off-by trailer
+        run: |
+          missing=0
+          for sha in $(git rev-list "origin/${{ github.base_ref }}..HEAD"); do
+            if ! git log -1 --format='%(trailers:key=Signed-off-by)' "$sha" | grep -q .; then
+              echo "::error::missing Signed-off-by: $(git log -1 --oneline "$sha")"
+              missing=1
+            fi
+          done
+          if [ "$missing" -ne 0 ]; then
+            echo "Sign off your commits with 'git commit -s' (see CONTRIBUTING.md)."
+            exit 1
+          fi
+          echo "✓ all commits signed off"

@@ -17,8 +17,8 @@ import {
 } from "./backend.ts";
 
 export function createPhotosModule(client: HelperClient = sharedPhotosClient()): AppModule {
-  const call = <T>(req: { op: string; args: Record<string, unknown> }) =>
-    client.call<T>(req.op, req.args);
+  const call = <T>(req: { op: string; args: Record<string, unknown> }, signal?: AbortSignal) =>
+    client.call<T>(req.op, req.args, signal);
 
   const readTools: ToolDef[] = [
     {
@@ -44,7 +44,7 @@ export function createPhotosModule(client: HelperClient = sharedPhotosClient()):
       mode: "read",
       actionId: "photos.list",
       annotations: { idempotentHint: true },
-      run: async (input) => ({ assets: await call(serializeListAssets(input)), _untrusted: true }),
+      run: async (input, ctx) => ({ assets: await call(serializeListAssets(input), ctx?.signal), _untrusted: true }),
     },
   ];
 

@@ -20,5 +20,9 @@ Read `DESIGN.md` (authoritative design) and `CLAUDE.md` (guardrails).
 - Update `CHANGELOG.md`.
 
 ## Developer Certificate of Origin (DCO)
-All commits must be signed off (`git commit -s`), certifying you have the right
-to submit the work under the project's MIT license (see https://developercertificate.org/).
+All commits **must** be signed off (`git commit -s`), certifying you have the
+right to submit the work under the project's MIT license
+(see https://developercertificate.org/). This is enforced by CI — a pull
+request whose commits lack a `Signed-off-by` trailer will fail the DCO check.
+
+To sign off retroactively: `git rebase --signoff main`.

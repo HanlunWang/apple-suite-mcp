@@ -23,8 +23,8 @@ import {
 } from "./backend.ts";
 
 export function createNotesModule(client: HelperClient = sharedNotesClient()): AppModule {
-  const call = <T>(req: { op: string; args: Record<string, unknown> }) =>
-    client.call<T>(req.op, req.args);
+  const call = <T>(req: { op: string; args: Record<string, unknown> }, signal?: AbortSignal) =>
+    client.call<T>(req.op, req.args, signal);
 
   const readTools: ToolDef[] = [
     {
@@ -49,7 +49,7 @@ export function createNotesModule(client: HelperClient = sharedNotesClient()): A
       mode: "read",
       actionId: "notes.list",
       annotations: { idempotentHint: true },
-      run: async (input) => ({ notes: await call(serializeListNotes(input)), _untrusted: true }),
+      run: async (input, ctx) => ({ notes: await call(serializeListNotes(input), ctx?.signal), _untrusted: true }),
     },
     {
       name: "notes_search",
@@ -62,7 +62,7 @@ export function createNotesModule(client: HelperClient = sharedNotesClient()): A
       mode: "read",
       actionId: "notes.search",
       annotations: { idempotentHint: true },
-      run: async (input) => ({ notes: await call(serializeSearchNotes(input)), _untrusted: true }),
+      run: async (input, ctx) => ({ notes: await call(serializeSearchNotes(input), ctx?.signal), _untrusted: true }),
     },
     {
       name: "notes_get",
@@ -73,7 +73,7 @@ export function createNotesModule(client: HelperClient = sharedNotesClient()): A
       mode: "read",
       actionId: "notes.get",
       annotations: { idempotentHint: true },
-      run: async (input) => ({ note: await call(serializeGetNote(input)), _untrusted: true }),
+      run: async (input, ctx) => ({ note: await call(serializeGetNote(input), ctx?.signal), _untrusted: true }),
     },
   ];
 

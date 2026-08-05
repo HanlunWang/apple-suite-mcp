@@ -22,8 +22,8 @@ import {
 } from "./backend.ts";
 
 export function createCalendarModule(client: HelperClient = sharedEventKitClient()): AppModule {
-  const call = <T>(req: { op: string; args: Record<string, unknown> }) =>
-    client.call<T>(req.op, req.args);
+  const call = <T>(req: { op: string; args: Record<string, unknown> }, signal?: AbortSignal) =>
+    client.call<T>(req.op, req.args, signal);
 
   const readTools: ToolDef[] = [
     {
@@ -54,8 +54,8 @@ export function createCalendarModule(client: HelperClient = sharedEventKitClient
       mode: "read",
       actionId: "calendar.list",
       annotations: { idempotentHint: true },
-      run: async (input) => ({
-        events: await call(serializeListEvents(input)),
+      run: async (input, ctx) => ({
+        events: await call(serializeListEvents(input), ctx?.signal),
         _untrusted: true,
       }),
     },

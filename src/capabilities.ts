@@ -72,9 +72,22 @@ export function registerCapabilityTools(
       description:
         "Show which Apple-app modules exist, which are enabled (read or " +
         "read/write), and any pending enable requests awaiting human approval. " +
-        "An absent tool means its module is disabled — request it with " +
-        "capabilities_request_enable instead of working around it.",
+        "A module that is disabled exposes no tools or resources.",
       inputSchema: {},
+      outputSchema: {
+        modules: z.record(
+          z.string(),
+          z.object({
+            enabled: z.boolean(),
+            mode: z.enum(["read", "write"]),
+            requiresFullDiskAccess: z.boolean(),
+            pending: z
+              .object({ mode: z.enum(["read", "write"]), requestedAt: z.string() })
+              .nullable(),
+          }),
+        ),
+        note: z.string(),
+      },
       annotations: { title: "List capabilities", readOnlyHint: true, destructiveHint: false },
     },
     async () => {
@@ -116,7 +129,11 @@ export function registerCapabilityTools(
           mode: z
             .enum(["read", "write"])
             .default("read")
-            .describe("Requested access mode. Prefer read unless writes are needed."),
+            .describe("Requested access mode. Read-only unless writes are needed."),
+        },
+        outputSchema: {
+          queued: z.object({ module: z.enum(MODULE_IDS), mode: z.enum(["read", "write"]) }),
+          nextStep: z.string(),
         },
         annotations: { title: "Request module enable", readOnlyHint: false, destructiveHint: false },
       },

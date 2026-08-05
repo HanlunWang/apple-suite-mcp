@@ -18,8 +18,8 @@ import {
 } from "./backend.ts";
 
 export function createMapsModule(client: HelperClient = sharedMapsClient()): AppModule {
-  const call = <T>(req: { op: string; args: Record<string, unknown> }) =>
-    client.call<T>(req.op, req.args);
+  const call = <T>(req: { op: string; args: Record<string, unknown> }, signal?: AbortSignal) =>
+    client.call<T>(req.op, req.args, signal);
 
   const readTools: ToolDef[] = [
     {
@@ -34,8 +34,8 @@ export function createMapsModule(client: HelperClient = sharedMapsClient()): App
       mode: "read",
       actionId: "maps.search",
       annotations: { idempotentHint: true, openWorldHint: true },
-      run: async (input) => ({
-        places: await call(serializeSearchPlaces(input)),
+      run: async (input, ctx) => ({
+        places: await call(serializeSearchPlaces(input), ctx?.signal),
         _untrusted: true,
       }),
     },
@@ -50,8 +50,8 @@ export function createMapsModule(client: HelperClient = sharedMapsClient()): App
       mode: "read",
       actionId: "maps.directions",
       annotations: { idempotentHint: true, openWorldHint: true },
-      run: async (input) => ({
-        route: await call(serializeDirections(input)),
+      run: async (input, ctx) => ({
+        route: await call(serializeDirections(input), ctx?.signal),
         _untrusted: true,
       }),
     },

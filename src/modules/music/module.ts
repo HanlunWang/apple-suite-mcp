@@ -21,8 +21,8 @@ import {
 } from "./backend.ts";
 
 export function createMusicModule(client: HelperClient = sharedMusicClient()): AppModule {
-  const call = <T>(req: { op: string; args: Record<string, unknown> }) =>
-    client.call<T>(req.op, req.args);
+  const call = <T>(req: { op: string; args: Record<string, unknown> }, signal?: AbortSignal) =>
+    client.call<T>(req.op, req.args, signal);
 
   const readTools: ToolDef[] = [
     {
@@ -47,17 +47,18 @@ export function createMusicModule(client: HelperClient = sharedMusicClient()): A
       mode: "read",
       actionId: "music.search",
       annotations: { idempotentHint: true },
-      run: async (input) => ({ tracks: await call(serializeSearchTracks(input)), _untrusted: true }),
+      run: async (input, ctx) => ({ tracks: await call(serializeSearchTracks(input), ctx?.signal), _untrusted: true }),
     },
   ];
 
   const control = (
     name: string,
+    title: string,
     action: "play" | "pause" | "next" | "previous",
     description: string,
   ): ToolDef => ({
     name,
-    title: name.replace(/_/g, " "),
+    title,
     description,
     inputSchema: {},
     outputSchema: { playback: PlaybackOut },
@@ -68,10 +69,10 @@ export function createMusicModule(client: HelperClient = sharedMusicClient()): A
   });
 
   const writeTools: ToolDef[] = [
-    control("music_play", "play", "Resume playback."),
-    control("music_pause", "pause", "Pause playback."),
-    control("music_next", "next", "Skip to the next track."),
-    control("music_previous", "previous", "Go back to the previous track."),
+    control("music_play", "Play", "play", "Resume playback."),
+    control("music_pause", "Pause", "pause", "Pause playback."),
+    control("music_next", "Next track", "next", "Skip to the next track."),
+    control("music_previous", "Previous track", "previous", "Go back to the previous track."),
     {
       name: "music_play_track",
       title: "Play track",

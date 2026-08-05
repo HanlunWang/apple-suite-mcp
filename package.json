@@ -1,6 +1,8 @@
 {
   "name": "apple-suite-mcp",
   "version": "1.0.0",
+  "//mcpName": "Links this package to server.json for MCP registry ownership verification.",
+  "mcpName": "io.github.HanlunWang/apple-suite-mcp",
   "description": "Secure, modular, opt-in MCP connector for the Apple app suite (Calendar, Reminders, Contacts, Notes, Mail, Messages, Maps, Photos, Music, Shortcuts).",
   "keywords": [
     "mcp",
@@ -16,10 +18,14 @@
   ],
   "type": "module",
   "license": "MIT",
-  "author": "Hanlun Wang",
+  "author": "Hanlun Wang <wanghanlunjason@gmail.com>",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/HanlunWang/apple-suite-mcp.git"
+  },
+  "homepage": "https://github.com/HanlunWang/apple-suite-mcp#readme",
+  "bugs": {
+    "url": "https://github.com/HanlunWang/apple-suite-mcp/issues"
   },
   "bin": {
     "apple-mcp": "./dist/cli/index.js"
@@ -42,6 +48,7 @@
     "node": ">=20"
   },
   "scripts": {
+    "prepack": "npm run build:ts",
     "build": "npm run build:ts && npm run build:native",
     "build:ts": "tsc -p tsconfig.json",
     "build:native": "sh scripts/build-native.sh",

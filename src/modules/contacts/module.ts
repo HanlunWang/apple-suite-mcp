@@ -18,8 +18,8 @@ import {
 } from "./backend.ts";
 
 export function createContactsModule(client: HelperClient = sharedContactsClient()): AppModule {
-  const call = <T>(req: { op: string; args: Record<string, unknown> }) =>
-    client.call<T>(req.op, req.args);
+  const call = <T>(req: { op: string; args: Record<string, unknown> }, signal?: AbortSignal) =>
+    client.call<T>(req.op, req.args, signal);
 
   const readTools: ToolDef[] = [
     {
@@ -33,8 +33,8 @@ export function createContactsModule(client: HelperClient = sharedContactsClient
       mode: "read",
       actionId: "contacts.search",
       annotations: { idempotentHint: true },
-      run: async (input) => ({
-        contacts: await call(serializeSearchContacts(input)),
+      run: async (input, ctx) => ({
+        contacts: await call(serializeSearchContacts(input), ctx?.signal),
         _untrusted: true,
       }),
     },
@@ -47,8 +47,8 @@ export function createContactsModule(client: HelperClient = sharedContactsClient
       mode: "read",
       actionId: "contacts.get",
       annotations: { idempotentHint: true },
-      run: async (input) => ({
-        contact: await call(serializeGetContact(input)),
+      run: async (input, ctx) => ({
+        contact: await call(serializeGetContact(input), ctx?.signal),
         _untrusted: true,
       }),
     },

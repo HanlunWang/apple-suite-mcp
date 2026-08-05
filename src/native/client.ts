@@ -25,9 +25,12 @@ export class HelperCallError extends Error {
   }
 }
 
-/** Minimal interface modules depend on — lets tests inject a fake. */
+/** Minimal interface modules depend on — lets tests inject a fake.
+ *  `signal` carries MCP cancellation down to the backend where the backend
+ *  can act on it (per-call processes can be killed; the resident NDJSON
+ *  helpers finish the in-flight request and simply stop being awaited). */
 export interface HelperClient {
-  call<T>(op: string, args?: Record<string, unknown>): Promise<T>;
+  call<T>(op: string, args?: Record<string, unknown>, signal?: AbortSignal): Promise<T>;
   close(): void;
 }
 
@@ -119,10 +122,21 @@ export class HelperProcessClient implements HelperClient {
     this.pending.clear();
   }
 
-  call<T>(op: string, args: Record<string, unknown> = {}): Promise<T> {
+  call<T>(op: string, args: Record<string, unknown> = {}, signal?: AbortSignal): Promise<T> {
     const child = this.ensureChild();
     const id = this.nextId++;
     return new Promise<T>((resolve, reject) => {
+      signal?.addEventListener(
+        "abort",
+        () => {
+          const p = this.pending.get(id);
+          if (!p) return;
+          this.pending.delete(id);
+          clearTimeout(p.timer);
+          reject(new HelperCallError("cancelled", `helper call ${op} was cancelled`));
+        },
+        { once: true },
+      );
       const timer = setTimeout(() => {
         this.pending.delete(id);
         reject(

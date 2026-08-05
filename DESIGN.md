@@ -93,12 +93,17 @@
 
 | MCP primitive | Used for | Example |
 |---|---|---|
-| **Resource** (read-only) | reading app data | `calendar://events?range=...`, `contacts://search?q=...` |
+| **Resource** (read-only) | browsable app data | `calendar://events` (next 7 days), `notes://notes` |
 | **Tool** (action) | writes / side effects | `calendar_create_event`, `mail_send` |
-| **Prompt** (template) | reusable workflows | `daily_planner`, `weekly_review` |
+| **Prompt** (template) | reusable workflows | not implemented in 1.0 — see below |
 
-Read-only capabilities are preferentially modeled as Resources — inherently
-read-only, semantically clear, cacheable by clients.
+Read-only capabilities are exposed as concrete Resources with sensible
+defaults (e.g. `calendar://events` = the next 7 days) *and* as Tools for the
+parameterized case. Resources are deliberately not templated: the SDK compiles
+every RFC 6570 query variable into a required match, so a templated resource
+only works when the client supplies every variable in order — a contract most
+hosts do not satisfy. Prompts are not shipped in 1.0; the workflows they would
+encode are expressible as ordinary tool calls today.
 
 ### 3.3 Config-driven, everything off by default
 
@@ -117,9 +122,12 @@ read-only, semantically clear, cacheable by clients.
     "messages":  { "enabled": false, "mode": "read" },  // needs FDA, isolated process
     "maps":      { "enabled": false, "mode": "read" },
     "photos":    { "enabled": false, "mode": "read" },
-    "music":     { "enabled": false, "mode": "read" }
+    "music":     { "enabled": false, "mode": "read" },
+    "shortcuts": { "enabled": false, "mode": "read" }
   },
-  "requireConfirmation": ["mail.send", "messages.send", "*.delete"],
+  // Config may ADD rules; the floor (mail.send, messages.send, shortcuts.run,
+  // *.delete) always applies and cannot be removed.
+  "requireConfirmation": ["mail.send", "messages.send", "shortcuts.run", "*.delete"],
   "transport": { "type": "stdio" },   // or { "type": "http", "auth": "oauth2.1" }
   "rateLimits": { "perToolPerMinute": 30, "perSessionPerMinute": 120 }
 }

@@ -30,22 +30,30 @@ export class JxaScriptClient implements HelperClient {
     this.timeoutMs = timeoutMs;
   }
 
-  call<T>(op: string, args: Record<string, unknown> = {}): Promise<T> {
+  call<T>(op: string, args: Record<string, unknown> = {}, signal?: AbortSignal): Promise<T> {
     return new Promise<T>((resolve, reject) => {
+      let cancelled = false;
       const child = execFile(
         this.bin,
         [...this.argv],
         { timeout: this.timeoutMs, maxBuffer: 8 * 1024 * 1024 },
-        (err, stdout) => {
+        (err, stdout, stderr) => {
+          if (cancelled) {
+            reject(new HelperCallError("cancelled", `${this.appLabel} call ${op} was cancelled`));
+            return;
+          }
           if (err && !stdout) {
-            const timedOut = /SIGTERM|timed? ?out/i.test(err.message) || err.killed === true;
+            const timedOut = err.killed === true || /SIGTERM|timed? ?out/i.test(err.message);
+            const tooLarge = (err as NodeJS.ErrnoException).code === "ERR_CHILD_PROCESS_STDIO_MAXBUFFER";
             reject(
               new HelperCallError(
-                timedOut ? "timeout" : "helper_spawn",
+                timedOut ? "timeout" : tooLarge ? "too_large" : "helper_spawn",
                 timedOut
                   ? `${this.appLabel} call ${op} timed out after ${this.timeoutMs}ms — macOS may ` +
                     `be showing an Automation permission dialog; approve it and retry`
-                  : err.message,
+                  : tooLarge
+                    ? `${this.appLabel} returned more data than the 8MB buffer allows; narrow the query`
+                    : (stderr?.trim() || err.message),
               ),
             );
             return;
@@ -67,6 +75,17 @@ export class JxaScriptClient implements HelperClient {
           }
         },
       );
+      // MCP cancellation: osascript runs per call, so it can genuinely be
+      // stopped rather than left running until the timeout.
+      signal?.addEventListener(
+        "abort",
+        () => {
+          cancelled = true;
+          child.kill();
+        },
+        { once: true },
+      );
+
       child.stdin!.write(JSON.stringify({ id: 1, op, args }));
       child.stdin!.end();
     });
