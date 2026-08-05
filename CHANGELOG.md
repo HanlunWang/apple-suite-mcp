@@ -5,6 +5,54 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 Versioning: [SemVer](https://semver.org/) for the npm package (independent of
 the MCP spec's date-based protocol versioning).
 
+## [Unreleased]
+
+A full code review of 1.0.0 (simplicity, correctness, security, spec/OSS
+compliance) found defects that were reproduced before each fix and re-verified
+after. 1.0.0 was tagged but never published to npm; these land on top of it.
+
+### Fixed
+- **The npm tarball shipped no Swift sources.** `files` used `native/*/Sources`,
+  which npm does not match recursively, so an installed package could not build
+  its helpers and calendar, reminders, contacts, maps and photos all failed.
+- **The resource surface delivered nothing.** Every parameterized resource threw
+  on read (RFC 6570 expansion yields strings; schemas required numbers), and no
+  resource appeared in `resources/list` (all were registered as templates
+  without a list callback). Resources are now concrete URIs with documented
+  defaults; all 11 are both discoverable and readable.
+- **One unbuilt helper took down the whole server**, including modules needing
+  no binary. Loader failures are isolated.
+- **The release workflow ran unpinned third-party code with the publish token,
+  before publishing** — so a compromised dependency could tamper with `dist/`
+  and still receive a valid provenance attestation. Pinned, moved after
+  publish, and the release job now runs lint, tests and audit first.
+- **Confirmation was a default, not a floor**: `requireConfirmation: []`
+  disarmed every side-effect gate. `CONFIRMATION_FLOOR` can now be extended but
+  never removed.
+- **`apple-mcp approve` let the model choose write access.** Write now requires
+  the human to type `--write`, and every disclosure states the mode and what
+  write permits.
+- **The static injection guard passed vacuously** when run from another
+  directory or after a directory rename. It now fails closed and asserts
+  coverage.
+- **Log redaction missed error messages**, writing recipient phone numbers to
+  stderr contrary to DESIGN.md §5.3.
+- Server startup was skipped entirely when the install path contained a space
+  or was reached through a symlink.
+- `server.json` declared a `$schema` URL that 404s; added `mcpName` (required
+  for registry publication), `bugs`, `homepage`, and a `prepack` build.
+- Two tool descriptions instructed the model how to behave, which Anthropic
+  directory review treats as prompt injection.
+- MCP cancellation now actually cancels; the JXA runner kills its child.
+- DCO was mandated with nothing enforcing it, and the Code of Conduct had no
+  reporting contact at all.
+- HTTP sessions are reaped and capped; `bind: "::1"` no longer rejects every
+  request; tool input is validated before the user is asked to confirm.
+
+### Changed
+- Deduplicated helper-path resolution and the `HelperRequest` type; removed
+  dead code and unified the backends' `ping` version strings (net −85 lines).
+
 ## [1.0.0] — 2026-08-05
 
 First stable release. Ten Apple app modules, all disabled by default, each
