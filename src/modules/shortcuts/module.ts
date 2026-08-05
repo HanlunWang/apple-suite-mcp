@@ -79,9 +79,6 @@ export function createShortcutsModule(client: HelperClient = sharedShortcutsClie
 
   return {
     id: "shortcuts",
-    activationNotice:
-      "Running a shortcut executes user-authored automation with your full privileges; " +
-      "every run asks for confirmation.",
     resources: () => resources,
     tools: (mode: Mode) => (mode === "write" ? [...readTools, ...writeTools] : readTools),
   };

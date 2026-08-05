@@ -6,6 +6,7 @@
  */
 
 import { z } from "zod";
+import type { HelperRequest } from "../_template/module.ts";
 
 const isoDateTime = () => z.iso.datetime({ offset: true });
 
@@ -47,10 +48,7 @@ export const ReminderIdInput = z.object({
   id: z.string().min(1).max(300).describe("Reminder id (from reminders_list)."),
 });
 
-export interface HelperRequest {
-  op: string;
-  args: Record<string, unknown>;
-}
+export type { HelperRequest };
 
 export function serializeListReminders(input: unknown): HelperRequest {
   return { op: "reminders.list", args: ListRemindersInput.parse(input) };

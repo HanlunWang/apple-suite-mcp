@@ -67,7 +67,7 @@ function handle(req) {
   const args = req.args || {};
   switch (req.op) {
     case "ping":
-      return { pong: true, version: "0.1.0" };
+      return { pong: true, version: "1.0.0" };
 
     case "notes.list_folders": {
       return app.folders().map((f) => ({ id: f.id(), name: f.name() }));
@@ -143,10 +143,11 @@ function run() {
   } catch (e) {
     const message = e && e.message ? String(e.message) : "internal error";
     const code = e && e.code ? String(e.code) : inferCode(message);
+    const hint = e && e.hint ? String(e.hint) : hintFor(code);
     return JSON.stringify({
       id: id,
       ok: false,
-      error: { code: code, message: message, hint: hintFor(code) },
+      error: { code: code, message: message, hint: hint },
     });
   }
 }

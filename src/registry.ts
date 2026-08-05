@@ -31,10 +31,7 @@ import { SlidingWindowLimiter } from "./ratelimit.ts";
 
 export type ModuleLoader = () => Promise<AppModule>;
 
-/**
- * Lazy loaders — a module's code is only imported once it is enabled.
- * Filled in as milestones land (M1: calendar, reminders; M3: contacts, notes; …).
- */
+/** Lazy loaders — a module's code is only imported once it is enabled. */
 // tsc's rewriteRelativeImportExtensions does not rewrite dynamic import()
 // specifiers, so derive the extension (.ts in dev, .js in dist) from how this
 // file itself is running.
@@ -145,7 +142,7 @@ export async function registerEnabledModules(
     const mode = remote && !allowRemoteWrite ? "read" : configuredMode;
     summary.modules.push(id);
 
-    for (const res of mod.resources(mode)) {
+    for (const res of mod.resources()) {
       // A URI with no RFC 6570 expression is a CONCRETE resource: register it
       // as a plain URI so it appears in resources/list. Templates registered
       // without a list callback are deliberately absent from that listing —
@@ -227,7 +224,6 @@ function registerTool(
     module: ModuleId;
   },
 ): void {
-  const limits = ctx;
   const confirmable = needsConfirmation(cfg, tool.actionId);
   if (confirmable && !tool.confirmPreview) {
     // A confirmable tool without a human-readable preview cannot present an
@@ -256,7 +252,7 @@ function registerTool(
       },
     },
     (async (args: Record<string, unknown>, extra: { signal: AbortSignal }) => {
-      if (!limits.perSession.take("session") || !limits.perTool.take(`tool:${tool.name}`)) {
+      if (!ctx.perSession.take("session") || !ctx.perTool.take(`tool:${tool.name}`)) {
         return errorResult(`Rate limit exceeded for "${tool.name}". Retry later.`);
       }
       try {

@@ -5,6 +5,7 @@
  */
 
 import { z } from "zod";
+import type { HelperRequest } from "../_template/module.ts";
 
 export const SearchPlacesInput = z.object({
   query: z.string().min(1).max(500).describe("What to look for, e.g. 'coffee' or a place name."),
@@ -28,10 +29,7 @@ export const DirectionsInput = z.object({
     .describe("Travel mode."),
 });
 
-export interface HelperRequest {
-  op: string;
-  args: Record<string, unknown>;
-}
+export type { HelperRequest };
 
 export function serializeSearchPlaces(input: unknown): HelperRequest {
   return { op: "maps.search", args: SearchPlacesInput.parse(input) };

@@ -4,6 +4,7 @@
  */
 
 import { z } from "zod";
+import type { HelperRequest } from "../_template/module.ts";
 
 export const SearchTracksInput = z.object({
   query: z.string().min(1).max(500).describe("Text to match against track, artist, or album."),
@@ -14,10 +15,7 @@ export const PlayTrackInput = z.object({
   id: z.string().min(1).max(300).describe("Track persistent id (from music_search)."),
 });
 
-export interface HelperRequest {
-  op: string;
-  args: Record<string, unknown>;
-}
+export type { HelperRequest };
 
 export function serializeNowPlaying(): HelperRequest {
   return { op: "music.now_playing", args: {} };

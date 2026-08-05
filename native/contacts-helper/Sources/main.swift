@@ -216,7 +216,7 @@ func handle(line: String, helper: Helper) async -> Data {
         let result: AnyEncodable
         switch envelope.op {
         case "ping":
-            result = AnyEncodable(PongDTO(pong: true, version: "0.1.0"))
+            result = AnyEncodable(PongDTO(pong: true, version: "1.0.0"))
         case "contacts.search":
             result = AnyEncodable(try await helper.search(decodeArgs(data, SearchArgs.self)))
         case "contacts.get":

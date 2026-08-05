@@ -5,13 +5,11 @@
  * calls into the same app" concurrency rule.
  */
 
-import { existsSync } from "node:fs";
-import { join } from "node:path";
 import {
   HelperCallError,
   type HelperClient,
   HelperProcessClient,
-  packageRoot,
+  resolveHelperBin,
 } from "./client.ts";
 
 export { HelperCallError, type HelperClient };
@@ -21,30 +19,15 @@ export const EVENTKIT_HELPER_BIN = "eventkit-helper";
 
 /** Fixed argv for every invocation. Request data NEVER appears in argv —
  *  argv is visible in `ps` output and easier to mangle than an stdin pipe. */
-export const HELPER_ARGV: readonly string[] = Object.freeze(["--json-stdin"]);
+export const EVENTKIT_HELPER_ARGV: readonly string[] = Object.freeze(["--json-stdin"]);
 
-/** Locate the built helper binary. Never derived from request data. */
-export function resolveHelperPath(): string {
-  const override = process.env["APPLE_MCP_EVENTKIT_HELPER"];
-  if (override) return override;
-
-  const root = packageRoot(import.meta.dirname);
-  const candidates = [
-    join(root, "native", "eventkit-helper", ".build", "release", EVENTKIT_HELPER_BIN),
-    join(root, "native", "eventkit-helper", ".build", "debug", EVENTKIT_HELPER_BIN),
-  ];
-  for (const p of candidates) if (existsSync(p)) return p;
-  throw new HelperCallError(
-    "helper_missing",
-    `${EVENTKIT_HELPER_BIN} binary not found`,
-    `Build it with "npm run build:native" (requires Xcode command line tools), ` +
-      `or point APPLE_MCP_EVENTKIT_HELPER at the binary.`,
-  );
+export function resolveEventKitHelperPath(): string {
+  return resolveHelperBin(EVENTKIT_HELPER_BIN, "APPLE_MCP_EVENTKIT_HELPER", import.meta.dirname);
 }
 
 export class EventKitHelperClient extends HelperProcessClient {
   constructor(binPath?: string, timeoutMs?: number) {
-    super(binPath ?? resolveHelperPath(), HELPER_ARGV, timeoutMs);
+    super(binPath ?? resolveEventKitHelperPath(), EVENTKIT_HELPER_ARGV, timeoutMs);
   }
 }
 

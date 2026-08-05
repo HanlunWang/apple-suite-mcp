@@ -6,6 +6,7 @@
  */
 
 import { z } from "zod";
+import type { HelperRequest } from "../_template/module.ts";
 
 export const ListChatsInput = z.object({
   limit: z.coerce.number().int().min(1).max(200).default(25).describe("Max chats. Hard cap 200."),
@@ -42,10 +43,7 @@ export const SendMessageInput = z
   .refine((v) => v.to || v.chatGuid, { message: "either to or chatGuid is required" });
 export type SendMessageInput = z.infer<typeof SendMessageInput>;
 
-export interface HelperRequest {
-  op: string;
-  args: Record<string, unknown>;
-}
+export type { HelperRequest };
 
 export function serializeListChats(input: unknown): HelperRequest {
   return { op: "messages.list_chats", args: ListChatsInput.parse(input) };

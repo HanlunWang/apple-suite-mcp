@@ -101,7 +101,6 @@ struct ListAssetsArgs: Decodable {
     let limit: Int?
 }
 
-struct EmptyArgs: Decodable {}
 
 // MARK: - Helper core
 

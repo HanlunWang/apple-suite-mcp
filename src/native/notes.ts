@@ -13,10 +13,6 @@ export function notesScriptPath(): string {
   return join(packageRoot(import.meta.dirname), "native", "notes-jxa", "notes.js");
 }
 
-/** Fixed argv: interpreter flag + constant script path. No request data. */
-export function notesArgv(): readonly string[] {
-  return Object.freeze(["-l", "JavaScript", notesScriptPath()]);
-}
 
 export class JxaNotesClient extends JxaScriptClient {
   constructor(timeoutMs?: number) {

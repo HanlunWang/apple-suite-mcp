@@ -5,6 +5,7 @@
  */
 
 import { z } from "zod";
+import type { HelperRequest } from "../_template/module.ts";
 
 export const ListUnreadInput = z.object({
   limit: z.coerce.number().int().min(1).max(100).default(20).describe("Max messages. Hard cap 100."),
@@ -28,10 +29,7 @@ export const SendMailInput = z.object({
 });
 export type SendMailInput = z.infer<typeof SendMailInput>;
 
-export interface HelperRequest {
-  op: string;
-  args: Record<string, unknown>;
-}
+export type { HelperRequest };
 
 export function serializeListUnread(input: unknown): HelperRequest {
   return { op: "mail.list_unread", args: ListUnreadInput.parse(input) };

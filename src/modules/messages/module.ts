@@ -122,9 +122,6 @@ export function createMessagesModule(
 
   return {
     id: "messages",
-    requiresFullDiskAccess: true,
-    activationNotice:
-      "Reads your ENTIRE iMessage history from chat.db (requires Full Disk Access).",
     resources: () => resources,
     tools: (mode: Mode) => (mode === "write" ? [...readTools, ...writeTools] : readTools),
   };

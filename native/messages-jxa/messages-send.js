@@ -20,7 +20,7 @@ function handle(req) {
   const args = req.args || {};
   switch (req.op) {
     case "ping":
-      return { pong: true, version: "0.1.0" };
+      return { pong: true, version: "1.0.0" };
 
     case "messages.send": {
       const body = String(args.body || "");

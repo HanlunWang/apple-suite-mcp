@@ -6,6 +6,7 @@
  */
 
 import { z } from "zod";
+import type { HelperRequest } from "../_template/module.ts";
 
 export const LabeledValueInput = z.object({
   label: z.string().max(100).optional().describe('Label like "home" or "work".'),
@@ -30,10 +31,7 @@ export const CreateContactInput = z.object({
 });
 export type CreateContactInput = z.infer<typeof CreateContactInput>;
 
-export interface HelperRequest {
-  op: string;
-  args: Record<string, unknown>;
-}
+export type { HelperRequest };
 
 export function serializeSearchContacts(input: unknown): HelperRequest {
   return { op: "contacts.search", args: SearchContactsInput.parse(input) };

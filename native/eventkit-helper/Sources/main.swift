@@ -209,7 +209,6 @@ struct CreateReminderArgs: Decodable {
     let priority: String?
 }
 
-struct EmptyArgs: Decodable {}
 
 // MARK: - Helper core
 
@@ -428,7 +427,7 @@ func handle(line: String, helper: Helper) async -> Data {
         let result: AnyEncodable
         switch envelope.op {
         case "ping":
-            result = AnyEncodable(PongDTO(pong: true, version: "0.1.0"))
+            result = AnyEncodable(PongDTO(pong: true, version: "1.0.0"))
         case "calendar.list_calendars":
             result = AnyEncodable(try await helper.listCalendars())
         case "calendar.list_events":

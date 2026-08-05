@@ -4,6 +4,7 @@
  */
 
 import { z } from "zod";
+import type { HelperRequest } from "../_template/module.ts";
 
 const isoDateTime = () => z.iso.datetime({ offset: true });
 
@@ -19,10 +20,7 @@ export const ListAssetsInput = z.object({
   limit: z.coerce.number().int().min(1).max(500).default(50).describe("Max assets. Hard cap 500."),
 });
 
-export interface HelperRequest {
-  op: string;
-  args: Record<string, unknown>;
-}
+export type { HelperRequest };
 
 export function serializeListAlbums(): HelperRequest {
   return { op: "photos.list_albums", args: {} };

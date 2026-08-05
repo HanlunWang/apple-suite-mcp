@@ -122,10 +122,11 @@ function run() {
   } catch (e) {
     const message = e && e.message ? String(e.message) : "internal error";
     const code = e && e.code ? String(e.code) : inferCode(message);
+    const hint = e && e.hint ? String(e.hint) : hintFor(code);
     return JSON.stringify({
       id: id,
       ok: false,
-      error: { code: code, message: message, hint: hintFor(code) },
+      error: { code: code, message: message, hint: hint },
     });
   }
 }

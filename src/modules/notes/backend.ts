@@ -7,6 +7,7 @@
  */
 
 import { z } from "zod";
+import type { HelperRequest } from "../_template/module.ts";
 
 export const ListNotesInput = z.object({
   folderName: z
@@ -41,10 +42,7 @@ export const CreateNoteInput = z.object({
 });
 export type CreateNoteInput = z.infer<typeof CreateNoteInput>;
 
-export interface HelperRequest {
-  op: string;
-  args: Record<string, unknown>;
-}
+export type { HelperRequest };
 
 export function serializeListFolders(): HelperRequest {
   return { op: "notes.list_folders", args: {} };

@@ -57,6 +57,28 @@ export function packageRoot(fromDir: string): string {
   return fromDir;
 }
 
+/**
+ * Resolve a built Swift helper binary. The path is derived only from the
+ * helper's own name and an env override — never from request data — so the
+ * "fixed binary, fixed argv" contract holds however the server is installed.
+ */
+export function resolveHelperBin(helper: string, envVar: string, fromDir: string): string {
+  const override = process.env[envVar];
+  if (override) return override;
+
+  const root = packageRoot(fromDir);
+  for (const build of ["release", "debug"]) {
+    const p = join(root, "native", helper, ".build", build, helper);
+    if (existsSync(p)) return p;
+  }
+  throw new HelperCallError(
+    "helper_missing",
+    `${helper} binary not found`,
+    `Build it with "npm run build:native" (requires Xcode command line tools), ` +
+      `or point ${envVar} at the binary.`,
+  );
+}
+
 export class HelperProcessClient implements HelperClient {
   private child: ChildProcess | undefined;
   private nextId = 1;

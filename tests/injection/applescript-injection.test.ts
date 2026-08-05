@@ -22,9 +22,8 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 
+import { EVENTKIT_HELPER_ARGV, EVENTKIT_HELPER_BIN } from "../../src/native/eventkit.ts";
 import {
-  EVENTKIT_HELPER_BIN,
-  HELPER_ARGV,
   buildHelperInvocation,
   serializeCreateEvent,
   serializeUpdateEvent,
@@ -112,7 +111,7 @@ describe("untrusted data never reaches executable script/shell text", () => {
 
       // 4) Fixed binary, fixed argv — payload only ever on stdin.
       assert.equal(invocation.command, EVENTKIT_HELPER_BIN);
-      assert.deepEqual([...invocation.argv], [...HELPER_ARGV]);
+      assert.deepEqual([...invocation.argv], [...EVENTKIT_HELPER_ARGV]);
       for (const arg of invocation.argv) {
         assert.ok(!arg.includes(payload), "payload leaked into argv");
       }

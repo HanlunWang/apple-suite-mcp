@@ -5,6 +5,7 @@
  */
 
 import { z } from "zod";
+import type { HelperRequest } from "../_template/module.ts";
 
 export const RunShortcutInput = z.object({
   name: z.string().min(1).max(300).describe("Exact shortcut name (from shortcuts_list)."),
@@ -16,10 +17,7 @@ export const RunShortcutInput = z.object({
 });
 export type RunShortcutInput = z.infer<typeof RunShortcutInput>;
 
-export interface HelperRequest {
-  op: string;
-  args: Record<string, unknown>;
-}
+export type { HelperRequest };
 
 export function serializeListShortcuts(): HelperRequest {
   return { op: "shortcuts.list", args: {} };

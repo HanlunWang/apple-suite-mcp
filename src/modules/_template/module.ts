@@ -12,6 +12,14 @@ import type { z } from "zod";
 
 export type Mode = "read" | "write";
 
+/** A structured backend request. `args` is pure data — it is serialized to
+ *  JSON and handed to a native helper on stdin, never spliced into script,
+ *  shell, or SQL text (DESIGN.md §5.1). */
+export interface HelperRequest {
+  op: string;
+  args: Record<string, unknown>;
+}
+
 /** A read-only capability, surfaced to MCP clients as a Resource. */
 export interface ResourceDef {
   /** RFC 6570 template, e.g. "calendar://events{?from,to}" */
@@ -59,12 +67,13 @@ export interface ToolDef {
 
 export interface AppModule {
   id: string;
-  /** Human-facing note shown by `apple-mcp enable`, e.g. FDA warning. */
-  activationNotice?: string;
-  /** Whether this module requires an isolated FDA helper process. */
-  requiresFullDiskAccess?: boolean;
-  /** Resources this module exposes (read). */
-  resources(mode: Mode): ResourceDef[];
+  // NOTE: activation warnings deliberately do NOT live here. The CLI drives
+  // them from config-level constants (FDA_MODULES) so that `apple-mcp enable`
+  // never has to import module code — importing a disabled module is exactly
+  // what the capability model forbids.
+  /** Resources this module exposes. Resources are read-only by definition,
+   *  so they do not vary with mode. */
+  resources(): ResourceDef[];
   /** Tools this module exposes (filtered by mode in the registry). */
   tools(mode: Mode): ToolDef[];
 }

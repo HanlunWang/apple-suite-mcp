@@ -16,9 +16,8 @@
  */
 
 import { z } from "zod";
-import { EVENTKIT_HELPER_BIN, HELPER_ARGV } from "../../native/eventkit.ts";
-
-export { EVENTKIT_HELPER_BIN, HELPER_ARGV };
+import type { HelperRequest } from "../_template/module.ts";
+import { EVENTKIT_HELPER_ARGV, EVENTKIT_HELPER_BIN } from "../../native/eventkit.ts";
 
 const isoDateTime = () => z.iso.datetime({ offset: true });
 
@@ -68,10 +67,7 @@ export const DeleteEventInput = z.object({
 });
 
 /** Structured request sent to the helper. Pure data — no executable text. */
-export interface HelperRequest {
-  op: string;
-  args: Record<string, unknown>;
-}
+export type { HelperRequest };
 
 export function serializeListEvents(input: unknown): HelperRequest {
   return { op: "calendar.list_events", args: ListEventsInput.parse(input) };
@@ -104,7 +100,7 @@ export interface HelperInvocation {
 export function buildHelperInvocation(request: HelperRequest): HelperInvocation {
   return {
     command: EVENTKIT_HELPER_BIN,
-    argv: HELPER_ARGV,
+    argv: EVENTKIT_HELPER_ARGV,
     stdin: JSON.stringify(request),
   };
 }
