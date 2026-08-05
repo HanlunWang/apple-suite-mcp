@@ -54,6 +54,7 @@ export function createShortcutsModule(client: HelperClient = sharedShortcutsClie
       mode: "write",
       actionId: "shortcuts.run",
       annotations: { destructiveHint: true, openWorldHint: true },
+      validate: (input) => void RunShortcutInput.parse(input),
       confirmPreview: (input) => {
         const name = String(input["name"] ?? "?");
         const text = typeof input["input"] === "string" ? String(input["input"]) : "";

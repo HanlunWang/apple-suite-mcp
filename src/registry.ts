@@ -260,6 +260,11 @@ function registerTool(
         return errorResult(`Rate limit exceeded for "${tool.name}". Retry later.`);
       }
       try {
+        // Validate BEFORE interrupting the user: approving a confirmation
+        // only to hit a schema error afterwards trains people to click through
+        // dialogs, which is the opposite of what the gate is for.
+        tool.validate?.(args);
+
         if (confirmable) {
           await confirmOrThrow(server, tool.actionId, tool.confirmPreview!(args));
         }

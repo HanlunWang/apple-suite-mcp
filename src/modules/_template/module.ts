@@ -49,6 +49,10 @@ export interface ToolDef {
   /** Human-readable preview shown in the elicitation confirmation dialog,
    *  e.g. "Send mail to a@b.c — subject: …". Required for confirmable tools. */
   confirmPreview?(input: Record<string, unknown>): string;
+  /** Validate input WITHOUT performing the action. The registry calls this
+   *  before asking for confirmation, so the user is never prompted to approve
+   *  a send that would then fail validation. Throws on invalid input. */
+  validate?(input: Record<string, unknown>): void;
   /** Long-running implementations should honor ctx.signal (MCP cancellation). */
   run(input: Record<string, unknown>, ctx?: { signal?: AbortSignal }): Promise<unknown>;
 }

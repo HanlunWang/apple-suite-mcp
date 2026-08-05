@@ -12,7 +12,22 @@
 export type LogLevel = "debug" | "info" | "warn" | "error";
 
 /** Keys whose string values are never written to logs. */
-const REDACT_KEY = /^(body|content|text|message|notes?|subject|phone|email|address|title|payload|stdin)$/i;
+const REDACT_KEY = /^(body|content|text|message|notes?|subject|phone|email|address|title|payload|stdin|query|name|sender|recipient|to|cc|bcc)$/i;
+
+/**
+ * Value-level scrubbing for fields that legitimately carry free text — most
+ * importantly error messages, which quote whatever the backend was working
+ * on ("no iMessage buddy with handle: +1555…"). Key-name redaction alone
+ * cannot cover these, and DESIGN.md §5.3 promises phone numbers and email
+ * addresses never land in logs.
+ */
+const SCRUB_KEY = /^(error|detail|hint|reason|note)$/i;
+const EMAIL_RE = /[\w.+-]+@[\w-]+\.[\w.-]+/g;
+const PHONE_RE = /\+?\d[\d\s().-]{6,}\d/g;
+
+function scrub(value: string): string {
+  return value.replace(EMAIL_RE, "[email]").replace(PHONE_RE, "[phone]");
+}
 
 const LEVEL_ORDER: Record<LogLevel, number> = { debug: 10, info: 20, warn: 30, error: 40 };
 
@@ -25,7 +40,13 @@ export function redact(value: unknown, depth = 0): unknown {
   if (value !== null && typeof value === "object") {
     const out: Record<string, unknown> = {};
     for (const [k, v] of Object.entries(value as Record<string, unknown>)) {
-      out[k] = REDACT_KEY.test(k) ? "[redacted]" : redact(v, depth + 1);
+      if (REDACT_KEY.test(k)) {
+        out[k] = "[redacted]";
+      } else if (SCRUB_KEY.test(k) && typeof v === "string") {
+        out[k] = scrub(v);
+      } else {
+        out[k] = redact(v, depth + 1);
+      }
     }
     return out;
   }

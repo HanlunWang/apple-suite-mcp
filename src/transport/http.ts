@@ -31,10 +31,27 @@ export interface HttpServerHandle {
 interface Session {
   transport: StreamableHTTPServerTransport;
   mcp: McpServer;
+  lastSeen: number;
 }
+
+/** A client that disconnects without DELETE leaves its session behind, so
+ *  sessions are reaped on idle and capped — otherwise each reconnect leaks an
+ *  McpServer, and minting fresh sessions would reset the per-session rate
+ *  limits indefinitely. */
+const SESSION_IDLE_MS = 30 * 60_000;
+const SESSION_SWEEP_MS = 60_000;
+const MAX_SESSIONS = 64;
 
 function isLoopback(bind: string): boolean {
   return bind === "127.0.0.1" || bind === "::1" || bind === "localhost";
+}
+
+/** Host values a loopback client may legitimately send. IPv6 literals appear
+ *  bracketed in the Host header, so `bind: "::1"` needs "[::1]" forms or the
+ *  DNS-rebinding allowlist rejects every request to the server's own address. */
+function loopbackHosts(port: number): string[] {
+  const hosts = ["127.0.0.1", "localhost", "[::1]"];
+  return [...hosts, ...hosts.map((h) => `${h}:${port}`)];
 }
 
 async function readBody(req: IncomingMessage): Promise<unknown> {
@@ -123,27 +140,25 @@ export async function startHttpServer(
         res.end(JSON.stringify({ error: "unknown_session" }));
         return;
       }
+      session.lastSeen = Date.now();
       await session.transport.handleRequest(req, res, body);
       return;
     }
 
     if (req.method === "POST" && isInitializeRequest(body)) {
+      if (sessions.size >= MAX_SESSIONS) {
+        logger.warn("http.session_limit", { sessions: sessions.size });
+        res.writeHead(503, { "content-type": "application/json" });
+        res.end(JSON.stringify({ error: "too_many_sessions" }));
+        return;
+      }
       const mcp = await createSessionServer();
       const transport = new StreamableHTTPServerTransport({
         sessionIdGenerator: () => randomUUID(),
         enableDnsRebindingProtection: isLoopback(t.bind),
-        ...(isLoopback(t.bind)
-          ? {
-              allowedHosts: [
-                "127.0.0.1",
-                "localhost",
-                `127.0.0.1:${actualPort}`,
-                `localhost:${actualPort}`,
-              ],
-            }
-          : {}),
+        ...(isLoopback(t.bind) ? { allowedHosts: loopbackHosts(actualPort) } : {}),
         onsessioninitialized: (id: string) => {
-          sessions.set(id, { transport, mcp });
+          sessions.set(id, { transport, mcp, lastSeen: Date.now() });
           logger.info("http.session_open", { sessions: sessions.size });
         },
       });
@@ -164,6 +179,18 @@ export async function startHttpServer(
     res.end(JSON.stringify({ error: "bad_request", detail: "expected initialize or mcp-session-id" }));
   }
 
+  const sweeper = setInterval(() => {
+    const cutoff = Date.now() - SESSION_IDLE_MS;
+    for (const [id, s] of sessions) {
+      if (s.lastSeen > cutoff) continue;
+      sessions.delete(id);
+      void s.transport.close();
+      void s.mcp.close();
+      logger.info("http.session_reaped", { sessions: sessions.size });
+    }
+  }, SESSION_SWEEP_MS);
+  sweeper.unref();
+
   await new Promise<void>((resolve, reject) => {
     httpServer.once("error", reject);
     httpServer.listen(t.port, t.bind, resolve);
@@ -183,6 +210,7 @@ export async function startHttpServer(
     server: httpServer,
     port,
     async close() {
+      clearInterval(sweeper);
       for (const [id, s] of sessions) {
         sessions.delete(id);
         await s.transport.close();

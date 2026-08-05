@@ -71,6 +71,7 @@ export function createMailModule(client: HelperClient = sharedMailClient()): App
       mode: "write",
       actionId: "mail.send",
       annotations: { destructiveHint: false, openWorldHint: true },
+      validate: (input) => void SendMailInput.parse(input),
       confirmPreview: (input) => {
         const to = Array.isArray(input["to"]) ? (input["to"] as string[]).join(", ") : "?";
         const subject = String(input["subject"] ?? "");

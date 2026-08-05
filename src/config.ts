@@ -38,6 +38,19 @@ export function isModuleId(id: string): id is ModuleId {
  *  TCC-responsible helper process (see DESIGN.md §3.5). */
 export const FDA_MODULES: ReadonlySet<ModuleId> = new Set(["messages"]);
 
+/**
+ * Confirmation rules that configuration can extend but NEVER remove
+ * (DESIGN.md §5.5). These actions send data outward or destroy it, so the
+ * human stays in the loop unconditionally — a config file that omits them
+ * (or empties the list) does not silently disarm the gate.
+ */
+export const CONFIRMATION_FLOOR: readonly string[] = Object.freeze([
+  "mail.send",
+  "messages.send",
+  "shortcuts.run",
+  "*.delete",
+]);
+
 /** High-risk modules that are NEVER exposed over the remote (HTTP) transport,
  *  regardless of configuration (DESIGN.md §4: minimal remote surface).
  *  shortcuts runs arbitrary user-authored automation, so it is local-only. */
@@ -107,13 +120,9 @@ export const AppConfig = z.object({
   protocol: z.string().default("2025-11-25"),
   modules: z.record(z.enum(MODULE_IDS), ModuleConfig),
   /** Fully-qualified action ids requiring elicitation confirmation.
-   *  Rule forms: "<module>.<action>", "*.<action>", "<module>.*". (DESIGN.md §5.5) */
-  requireConfirmation: z.array(z.string()).default([
-    "mail.send",
-    "messages.send",
-    "shortcuts.run",
-    "*.delete",
-  ]),
+   *  Rule forms: "<module>.<action>", "*.<action>", "<module>.*". (DESIGN.md §5.5)
+   *  Config may ADD rules; it can never remove CONFIRMATION_FLOOR. */
+  requireConfirmation: z.array(z.string()).default([...CONFIRMATION_FLOOR]),
   /** Register the capabilities_* meta tools (DESIGN.md §3.4). They expose no
    *  app data; enable-requests still require CLI approval + restart. */
   capabilityTools: z.boolean().default(true),
@@ -241,11 +250,13 @@ export function isWriteAllowed(cfg: AppConfig, id: ModuleId): boolean {
 }
 
 /** Gate ③: does this action require an elicitation confirmation?
- *  actionId is "<module>.<action>"; rules may wildcard either side. */
+ *  actionId is "<module>.<action>"; rules may wildcard either side.
+ *  CONFIRMATION_FLOOR always applies, whatever the config says. */
 export function needsConfirmation(cfg: AppConfig, actionId: string): boolean {
   const [mod, action] = actionId.split(".");
   if (!mod || !action) return true; // malformed id: fail closed
-  return cfg.requireConfirmation.some((rule) => {
+  const rules = [...CONFIRMATION_FLOOR, ...cfg.requireConfirmation];
+  return rules.some((rule) => {
     const [rMod, rAction] = rule.split(".");
     if (!rMod || !rAction) return false;
     return (rMod === mod || rMod === "*") && (rAction === action || rAction === "*");

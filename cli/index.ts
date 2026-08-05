@@ -25,6 +25,7 @@ import {
   saveConfig,
   ConfigError,
 } from "../src/config.ts";
+import type { Mode } from "../src/modules/_template/module.ts";
 
 const USAGE = `apple-mcp — capability control for the Apple Suite MCP server
 
@@ -33,9 +34,14 @@ Usage:
   apple-mcp enable <module> [--write]    Enable a module (read-only by default)
   apple-mcp disable <module>             Disable a module
   apple-mcp pending                      Show enable requests queued by the model
-  apple-mcp approve <module>             Approve a pending request
+  apple-mcp approve <module> [--write]   Approve a pending request (read-only
+                                         unless --write is given explicitly)
   apple-mcp reject <module>              Discard a pending request
   apple-mcp help                         Show this help
+
+Flags:
+  --write   Grant read/write instead of read-only
+  --yes     Skip the interactive confirmation (required for non-TTY use)
 
 Modules: ${MODULE_IDS.join(", ")}
 
@@ -76,17 +82,32 @@ function printStatus(cfg: AppConfig): void {
   );
 }
 
-async function acknowledgeFda(id: ModuleId, yes: boolean): Promise<void> {
-  process.stderr.write(
-    [
-      "",
-      `⚠  "${id}" requires FULL DISK ACCESS.`,
-      "   It reads ~/Library/Messages/chat.db — your ENTIRE iMessage history.",
-      "   The helper runs as an isolated process; revoke it anytime in",
-      "   System Settings → Privacy & Security → Full Disk Access.",
-      "",
-    ].join("\n"),
-  );
+/** Confirm a grant with the human. The MODE is always stated: read-only and
+ *  read/write differ enormously (write means sending messages / running
+ *  automation), and the mode may have been proposed by the model through the
+ *  pending-request queue. */
+async function acknowledgeGrant(id: ModuleId, mode: Mode, yes: boolean): Promise<void> {
+  const lines = ["", `⚠  About to enable "${id}" with ${describeMode(id, mode)}.`];
+  if (FDA_MODULES.has(id)) {
+    lines.push(
+      `   "${id}" requires FULL DISK ACCESS: it reads ~/Library/Messages/chat.db —`,
+      "   your ENTIRE iMessage history. The reader runs as an isolated process;",
+      "   revoke it anytime in System Settings → Privacy & Security → Full Disk Access.",
+    );
+  }
+  if (id === "shortcuts") {
+    lines.push(
+      "   Shortcuts run user-authored automation with your full privileges.",
+      "   Every run still asks for confirmation in the client.",
+    );
+  }
+  lines.push("");
+  process.stderr.write(lines.join("\n"));
+
+  // Only Full-Disk-Access modules block on an interactive confirmation. For
+  // everything else the human already made the decision explicit by typing
+  // the command (and --write); the printed summary is the disclosure.
+  if (!FDA_MODULES.has(id)) return;
   if (yes) return;
   if (!process.stdin.isTTY) {
     fail(`refusing to enable "${id}" non-interactively without --yes`);
@@ -95,6 +116,21 @@ async function acknowledgeFda(id: ModuleId, yes: boolean): Promise<void> {
   const answer = (await rl.question(`Type "yes" to enable ${id}: `)).trim().toLowerCase();
   rl.close();
   if (answer !== "yes") fail("aborted — module not enabled");
+}
+
+function describeMode(id: ModuleId, mode: Mode): string {
+  if (mode !== "write") return "READ-ONLY access";
+  const extra: Partial<Record<ModuleId, string>> = {
+    mail: " — this allows SENDING mail",
+    messages: " — this allows SENDING iMessages",
+    shortcuts: " — this allows RUNNING shortcuts",
+  };
+  return `READ/WRITE access${extra[id] ?? ""}`;
+}
+
+/** Which grants get an explicit disclosure before being applied. */
+function needsAcknowledgement(id: ModuleId, mode: Mode): boolean {
+  return FDA_MODULES.has(id) || mode === "write" || id === "shortcuts";
 }
 
 async function main(): Promise<void> {
@@ -119,13 +155,13 @@ async function main(): Promise<void> {
 
     case "enable": {
       const id = requireModuleId(args[0]);
-      const write = flags.has("--write");
-      if (FDA_MODULES.has(id)) await acknowledgeFda(id, flags.has("--yes"));
+      const mode: Mode = flags.has("--write") ? "write" : "read";
+      if (needsAcknowledgement(id, mode)) await acknowledgeGrant(id, mode, flags.has("--yes"));
       const cfg = loadConfig();
-      cfg.modules[id] = { enabled: true, mode: write ? "write" : "read" };
+      cfg.modules[id] = { enabled: true, mode };
       saveConfig(cfg);
       process.stdout.write(
-        `enabled ${id} (${write ? "read/write" : "read-only"}). Restart the server to apply.\n`,
+        `enabled ${id} (${mode === "write" ? "read/write" : "read-only"}). Restart the server to apply.\n`,
       );
       return;
     }
@@ -159,14 +195,36 @@ async function main(): Promise<void> {
       const pending = loadPending();
       const req = pending.requests[id];
       if (!req) fail(`no pending request for "${id}" (see "apple-mcp pending")`);
-      if (FDA_MODULES.has(id)) await acknowledgeFda(id, flags.has("--yes"));
+
+      // The requested mode was chosen by the MODEL, which may have been
+      // steered by untrusted content it read. Approving never silently grants
+      // more than read: write requires the human to type --write here, exactly
+      // as `apple-mcp enable` does.
+      let mode: Mode = "read";
+      if (req.mode === "write") {
+        if (flags.has("--write")) {
+          mode = "write";
+        } else {
+          process.stderr.write(
+            [
+              "",
+              `note: the request for "${id}" asked for READ/WRITE access.`,
+              `      Approving read-only. To grant writes, run:`,
+              `        apple-mcp approve ${id} --write`,
+              "",
+            ].join("\n"),
+          );
+        }
+      }
+
+      if (needsAcknowledgement(id, mode)) await acknowledgeGrant(id, mode, flags.has("--yes"));
       const cfg = loadConfig();
-      cfg.modules[id] = { enabled: true, mode: req.mode };
+      cfg.modules[id] = { enabled: true, mode };
       saveConfig(cfg);
       delete pending.requests[id];
       savePending(pending);
       process.stdout.write(
-        `approved ${id} (${req.mode === "write" ? "read/write" : "read-only"}). Restart the server to apply.\n`,
+        `approved ${id} (${mode === "write" ? "read/write" : "read-only"}). Restart the server to apply.\n`,
       );
       return;
     }

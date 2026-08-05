@@ -95,6 +95,7 @@ export function createMessagesModule(
       mode: "write",
       actionId: "messages.send",
       annotations: { destructiveHint: false, openWorldHint: true },
+      validate: (input) => void SendMessageInput.parse(input),
       confirmPreview: (input) => {
         const target = String(input["chatGuid"] ?? input["to"] ?? "?");
         const body = String(input["body"] ?? "");

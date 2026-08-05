@@ -88,7 +88,7 @@ describe("capabilities meta tools", () => {
 });
 
 describe("CLI approval loop", () => {
-  it("pending → approve applies the requested mode and clears the queue", async () => {
+  it("pending → approve enables the module and clears the queue", async () => {
     const client = await connect({ remote: false });
     await client.callTool({
       name: "capabilities_request_enable",
@@ -101,8 +101,23 @@ describe("CLI approval loop", () => {
     const cfg = JSON.parse(readFileSync(join(dir, "config.json"), "utf8")) as {
       modules: Record<string, { enabled: boolean; mode: string }>;
     };
-    assert.deepEqual(cfg.modules["reminders"], { enabled: true, mode: "write" });
+    // The MODEL asked for write; a bare approve grants read only. Write has to
+    // come from the human typing --write.
+    assert.deepEqual(cfg.modules["reminders"], { enabled: true, mode: "read" });
     assert.ok(!existsSync(pendingPath()), "pending file cleared");
+  });
+
+  it("approve --write honors a write request", async () => {
+    const client = await connect({ remote: false });
+    await client.callTool({
+      name: "capabilities_request_enable",
+      arguments: { module: "reminders", mode: "write" },
+    });
+    assert.equal(runCli(["approve", "reminders", "--write"]).status, 0);
+    const cfg = JSON.parse(readFileSync(join(dir, "config.json"), "utf8")) as {
+      modules: Record<string, { enabled: boolean; mode: string }>;
+    };
+    assert.deepEqual(cfg.modules["reminders"], { enabled: true, mode: "write" });
   });
 
   it("reject discards without enabling", async () => {
@@ -125,12 +140,13 @@ describe("CLI approval loop", () => {
     // Non-interactive without --yes must refuse.
     assert.notEqual(runCli(["approve", "messages"]).status, 0);
     assert.equal(loadPending().requests.messages?.mode, "write", "request stays queued");
-    // Explicit acknowledgement applies it.
+    // Explicit acknowledgement applies it — and still only grants what the
+    // human typed, so a model-requested write without --write becomes read.
     assert.equal(runCli(["approve", "messages", "--yes"]).status, 0);
     const cfg = JSON.parse(readFileSync(join(dir, "config.json"), "utf8")) as {
       modules: Record<string, { enabled: boolean; mode: string }>;
     };
-    assert.deepEqual(cfg.modules["messages"], { enabled: true, mode: "write" });
+    assert.deepEqual(cfg.modules["messages"], { enabled: true, mode: "read" });
   });
 
   it("approve without a pending request fails", () => {
