@@ -8,7 +8,9 @@ Status:
 - `eventkit-helper/`  — Swift, EventKit (Calendar + Reminders)    ✅ M1
 - `contacts-helper/`  — Swift, Contacts.framework                 ✅ M3
 - `notes-jxa/`        — fixed JXA template run by osascript       ✅ M3
-- `messages-helper/`  — chat.db (needs FDA, isolated)             planned (M4)
+- `mail-jxa/`         — fixed JXA template run by osascript       ✅ M4
+- `messages-jxa/`     — fixed JXA send template                   ✅ M4
+- messages reads      — sqlite child (`src/native/messages-helper-child`, FDA) ✅ M4
 
 ## Contract
 
@@ -66,3 +68,21 @@ Ops: `ping` (no Apple Events — CI-safe), `notes.list_folders`, `notes.list`,
 tree that runs the MCP server, so the Automation prompt names your terminal or
 Claude app — not a helper binary. A compiled applet wrapper (own TCC subject,
 like the Swift helpers) is planned for M5 polish.
+
+## mail-jxa / messages-jxa (high-risk scripting backends)
+
+Same fixed-template contract as notes-jxa. `mail.js` does unread/search/send;
+`messages-send.js` sends exactly one iMessage per invocation. Both sends are
+gated by elicitation confirmation in the server before the template runs, and
+neither module is exposed over the remote transport.
+
+## messages reads (FDA-isolated sqlite child)
+
+Reading iMessage history needs Full Disk Access to `~/Library/Messages/chat.db`.
+That access is confined to a **separate child process**
+(`src/native/messages-helper-child`, spawned under the same Node binary) which
+opens the database **read-only** and queries it with parameterized
+better-sqlite3 statements — the main server process never opens the file. The
+child opens the DB lazily (spawning it touches nothing until the first query)
+and reports a Full-Disk-Access hint if the open fails. Point `APPLE_MCP_CHATDB`
+at a fixture database to exercise it without real data.

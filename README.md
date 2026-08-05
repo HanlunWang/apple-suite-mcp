@@ -6,15 +6,17 @@
 > A security-focused fork and rewrite of
 > [supermemoryai/apple-mcp](https://github.com/supermemoryai/apple-mcp) (MIT).
 
-**Status:** M3 complete — **four working modules**: Calendar + Reminders
-(Swift EventKit helper), Contacts (Swift Contacts.framework helper, its own
-revocable TCC subject), and Notes (fixed JXA template; data on stdin, never
-in script source). Plus the M2 permission system: `capabilities_*` meta tools
-with a human-approval queue, an optional remote Streamable HTTP transport
-with OAuth 2.1 (audience-validated) or API-key auth, and a hard-minimal
-remote surface. Next: M4 (Mail, Messages — high-risk, FDA isolation). See
-[`DESIGN.md`](./DESIGN.md) for the full architecture and
-[`CLAUDE.md`](./CLAUDE.md) for build guidance.
+**Status:** M4 complete — **six working modules**: Calendar, Reminders,
+Contacts (Swift native helpers), Notes, Mail (fixed JXA templates), and
+Messages. Messages is the high-risk case: reads go through an **FDA-isolated
+child process** that queries `chat.db` with parameterized SQLite (the server
+process never opens the file), and sending goes through a fixed JXA template.
+Mail and Messages sends always pass an elicitation confirmation, both modules
+require the CLI Full-Disk-Access acknowledgement where relevant, and neither
+is ever exposed over the remote transport. On top of the M2 permission system
+(`capabilities_*` meta tools, remote Streamable HTTP + OAuth 2.1 / API-key,
+minimal remote surface). Next: M5 (Maps/Photos/Music, polish, 1.0 release).
+See [`DESIGN.md`](./DESIGN.md) and [`CLAUDE.md`](./CLAUDE.md).
 
 ## Why another Apple MCP?
 

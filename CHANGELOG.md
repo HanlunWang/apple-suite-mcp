@@ -7,6 +7,25 @@ the MCP spec's date-based protocol versioning).
 
 ## [Unreleased]
 ### Added
+- M4 high-risk modules — Mail and Messages:
+  - Mail via a fixed JXA template (unread/search read; send write). `mail_send`
+    is in the default requireConfirmation list — the elicitation gate (with a
+    recipients + subject + body-excerpt preview) fires before the template runs.
+  - Messages split by risk: reads run in an **FDA-isolated child process**
+    (`messages-helper-child`) that opens `chat.db` READ-ONLY and queries it
+    with parameterized better-sqlite3 statements (LIKE wildcards escaped;
+    attributedBody typedstream text extraction) — the main server process
+    never touches the file. Sending uses a fixed JXA template and is
+    confirmation-gated.
+  - Both modules stay in REMOTE_BLOCKED_MODULES (never registered over HTTP);
+    messages keeps the CLI Full-Disk-Access acknowledgement and lazy open
+    (spawning the child touches nothing until the first query).
+  - New SQL injection regression suite runs hostile payloads (DROP TABLE, LIKE
+    wildcards, OR-injection) through the real prepared statements against an
+    in-memory chat.db; serializer suite and module tests extended to prove
+    sends never reach a backend without an accepted elicitation.
+  - `better-sqlite3` pinned; CI smoke-tests the mail/messages JXA templates
+    and the sqlite child.
 - M3 expansion — Contacts and Notes modules:
   - `contacts-helper` (Swift, Contacts.framework): separate binary = its own
     revocable TCC subject; search/get/create over the same NDJSON protocol;

@@ -7,10 +7,11 @@ code**.
 ## Your task
 
 Implement this MCP server following the roadmap in `DESIGN.md` §8 (M0→M5).
-**M0–M3 are complete** (foundation; eventkit security core; permission
-system + remote transport; Contacts + Notes). The current milestone is
-**M4 (Mail + Messages — high-risk: FDA-isolated messages-helper,
-confirmation hard-wired, remote-blocked)**.
+**M0–M4 are complete** (foundation; eventkit security core; permission
+system + remote transport; Contacts + Notes; Mail + Messages with an
+FDA-isolated sqlite child, confirmation-gated sends, remote-blocked). The
+current milestone is **M5 (Maps / Photos / Music / Shortcuts, performance,
+caching, MCPB packaging, `server.json` publication, SBOM + signing → 1.0)**.
 
 ## Non-negotiable security invariants (violations are bugs)
 

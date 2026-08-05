@@ -56,6 +56,14 @@ export const MODULE_LOADERS: Partial<Record<ModuleId, ModuleLoader>> = {
     (
       (await import(`./modules/notes/module${EXT}`)) as typeof import("./modules/notes/module.ts")
     ).createNotesModule(),
+  mail: async () =>
+    (
+      (await import(`./modules/mail/module${EXT}`)) as typeof import("./modules/mail/module.ts")
+    ).createMailModule(),
+  messages: async () =>
+    (
+      (await import(`./modules/messages/module${EXT}`)) as typeof import("./modules/messages/module.ts")
+    ).createMessagesModule(),
 };
 
 export interface RegistrationSummary {

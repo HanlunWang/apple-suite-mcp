@@ -35,6 +35,11 @@ import {
 } from "../../src/modules/reminders/backend.ts";
 import { serializeCreateContact, serializeSearchContacts } from "../../src/modules/contacts/backend.ts";
 import { serializeCreateNote, serializeSearchNotes } from "../../src/modules/notes/backend.ts";
+import { serializeSearchMail, serializeSendMail } from "../../src/modules/mail/backend.ts";
+import {
+  serializeSearchMessages,
+  serializeSendMessage,
+} from "../../src/modules/messages/backend.ts";
 
 /** Payloads that broke naive `"` -> `\"` escaping in the upstream repo.
  *  (Written with explicit \\ escapes — String.raw`...\` does not end where it
@@ -157,6 +162,31 @@ describe("all serializer boundaries carry payloads as inert data", () => {
       forEachKey(create, (k) => assert.ok(!FORBIDDEN_KEYS.test(k)));
 
       const search = serializeSearchContacts({ query: payload });
+      assert.equal(JSON.parse(JSON.stringify(search)).args.query, payload);
+    });
+
+    it(`mail send+search: ${label}…`, () => {
+      const send = serializeSendMail({
+        to: ["a@example.test"],
+        subject: "s",
+        body: payload,
+      });
+      assert.equal(send.op, "mail.send");
+      const wire = JSON.parse(JSON.stringify(send)) as typeof send;
+      assert.equal(wire.args["body"], payload);
+      forEachKey(send, (k) => assert.ok(!FORBIDDEN_KEYS.test(k)));
+
+      const search = serializeSearchMail({ query: payload });
+      assert.equal(JSON.parse(JSON.stringify(search)).args.query, payload);
+    });
+
+    it(`messages send+search: ${label}…`, () => {
+      const send = serializeSendMessage({ to: "+15550001", body: payload });
+      assert.equal(send.op, "messages.send");
+      assert.equal(JSON.parse(JSON.stringify(send)).args.body, payload);
+      forEachKey(send, (k) => assert.ok(!FORBIDDEN_KEYS.test(k)));
+
+      const search = serializeSearchMessages({ query: payload });
       assert.equal(JSON.parse(JSON.stringify(search)).args.query, payload);
     });
 

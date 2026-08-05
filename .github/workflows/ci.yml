@@ -19,8 +19,13 @@ jobs:
               | "./native/${helper}/.build/release/${helper}" --json-stdin \
               | grep -q '"pong":true'
           done
-          printf '{"id":1,"op":"ping"}' \
-            | osascript -l JavaScript native/notes-jxa/notes.js \
+          for template in notes-jxa/notes.js mail-jxa/mail.js messages-jxa/messages-send.js; do
+            printf '{"id":1,"op":"ping"}' \
+              | osascript -l JavaScript "native/${template}" \
+              | grep -q '"pong":true'
+          done
+          printf '%s\n' '{"id":1,"op":"ping"}' \
+            | node dist/src/native/messages-helper-child.js --json-stdin \
             | grep -q '"pong":true'
       - name: Dist server smoke (dynamic module registration)
         run: |
