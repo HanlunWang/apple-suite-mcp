@@ -14,7 +14,7 @@ export const LabeledValueInput = z.object({
 
 export const SearchContactsInput = z.object({
   query: z.string().min(1).max(500).describe("Name to search for (partial names match)."),
-  limit: z.number().int().min(1).max(200).default(25).describe("Max results. Hard cap 200."),
+  limit: z.coerce.number().int().min(1).max(200).default(25).describe("Max results. Hard cap 200."),
 });
 
 export const GetContactInput = z.object({

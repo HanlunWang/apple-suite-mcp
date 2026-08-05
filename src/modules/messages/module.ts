@@ -110,11 +110,13 @@ export function createMessagesModule(
 
   const resources: ResourceDef[] = [
     {
-      uriTemplate: "messages://chats{?limit}",
+      uriTemplate: "messages://chats",
       name: "messages-chats",
       title: "Chats",
-      description: "Recent conversations as JSON.",
-      read: async (_uri, params) => await read(serializeListChats(params)),
+      description:
+        "Recent conversations (participants, last activity) as JSON. For " +
+        "message contents use the messages_list / messages_search tools.",
+      read: async () => await read(serializeListChats({})),
     },
   ];
 

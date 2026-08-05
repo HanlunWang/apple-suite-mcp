@@ -15,11 +15,16 @@ export const ListRemindersInput = z.object({
     .max(200)
     .optional()
     .describe("Restrict to one reminder list (id from reminders_list_lists). Default: all lists."),
+  // Also accepts the string forms that RFC 6570 template expansion produces
+  // for the reminders://reminders{?includeCompleted} resource. z.coerce is
+  // unusable here: it applies JS Boolean() semantics, so "false" would
+  // become true.
   includeCompleted: z
-    .boolean()
+    .union([z.boolean(), z.literal("true"), z.literal("false")])
     .default(false)
+    .transform((v) => v === true || v === "true")
     .describe("Include completed reminders. Default: only open ones."),
-  limit: z.number().int().min(1).max(500).default(50).describe("Max reminders returned. Hard cap 500."),
+  limit: z.coerce.number().int().min(1).max(500).default(50).describe("Max reminders returned. Hard cap 500."),
 });
 
 export const CreateReminderInput = z.object({

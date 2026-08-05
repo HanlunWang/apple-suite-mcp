@@ -104,8 +104,13 @@ describe("registration-time gating", () => {
     const { client } = await connect(cfg);
     const names = moduleTools((await client.listTools()).tools.map((t) => t.name));
     assert.deepEqual(names, ["calendar_list_events"]);
-    const templates = await client.listResourceTemplates();
-    assert.equal(templates.resourceTemplates.length, 1);
+    // A concrete URI (no RFC 6570 expression) is listed in resources/list,
+    // which is the listing hosts actually browse.
+    const { resources } = await client.listResources();
+    assert.deepEqual(
+      resources.map((r) => r.uri),
+      ["calendar://events"],
+    );
   });
 
   it("write mode: write tools become visible", async () => {

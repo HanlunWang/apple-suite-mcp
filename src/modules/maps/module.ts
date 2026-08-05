@@ -57,15 +57,9 @@ export function createMapsModule(client: HelperClient = sharedMapsClient()): App
     },
   ];
 
-  const resources: ResourceDef[] = [
-    {
-      uriTemplate: "maps://search{?query,limit}",
-      name: "maps-search",
-      title: "Place search",
-      description: "Places matching a query, as JSON.",
-      read: async (_uri, params) => await call(serializeSearchPlaces(params)),
-    },
-  ];
+  // Maps exposes no resource: a place search without a query is meaningless
+  // as browsable context, and the maps_search_places tool covers it.
+  const resources: ResourceDef[] = [];
 
   return {
     id: "maps",

@@ -104,11 +104,13 @@ export function createNotesModule(client: HelperClient = sharedNotesClient()): A
       read: async () => await call(serializeListFolders()),
     },
     {
-      uriTemplate: "notes://notes{?folderName,limit}",
+      uriTemplate: "notes://notes",
       name: "notes-notes",
       title: "Notes",
-      description: "Note metadata, optionally filtered to one folder.",
-      read: async (_uri, params) => await call(serializeListNotes(params)),
+      description:
+        "Recent note metadata (titles, folders, modification times), as JSON. " +
+        "To filter by folder or read a body, use the notes_list / notes_get tools.",
+      read: async () => await call(serializeListNotes({})),
     },
   ];
 

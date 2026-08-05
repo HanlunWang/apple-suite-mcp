@@ -7,7 +7,7 @@
 import { z } from "zod";
 
 export const ListUnreadInput = z.object({
-  limit: z.number().int().min(1).max(100).default(20).describe("Max messages. Hard cap 100."),
+  limit: z.coerce.number().int().min(1).max(100).default(20).describe("Max messages. Hard cap 100."),
   includeBody: z
     .boolean()
     .default(false)
@@ -16,7 +16,7 @@ export const ListUnreadInput = z.object({
 
 export const SearchMailInput = z.object({
   query: z.string().min(1).max(500).describe("Text to find in inbox subjects or senders."),
-  limit: z.number().int().min(1).max(100).default(25).describe("Max results. Hard cap 100."),
+  limit: z.coerce.number().int().min(1).max(100).default(25).describe("Max results. Hard cap 100."),
 });
 
 export const SendMailInput = z.object({

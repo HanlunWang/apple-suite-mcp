@@ -27,7 +27,7 @@
   "files": [
     "dist",
     "native/*/Package.swift",
-    "native/*/Sources",
+    "native/*/Sources/**",
     "native/notes-jxa",
     "native/mail-jxa",
     "native/messages-jxa",

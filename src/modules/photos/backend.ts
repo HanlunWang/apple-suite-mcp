@@ -16,7 +16,7 @@ export const ListAssetsInput = z.object({
   from: isoDateTime().optional().describe("Only assets created at/after this time (ISO 8601)."),
   to: isoDateTime().optional().describe("Only assets created at/before this time (ISO 8601)."),
   favoritesOnly: z.boolean().default(false).describe("Only favorites."),
-  limit: z.number().int().min(1).max(500).default(50).describe("Max assets. Hard cap 500."),
+  limit: z.coerce.number().int().min(1).max(500).default(50).describe("Max assets. Hard cap 500."),
 });
 
 export interface HelperRequest {

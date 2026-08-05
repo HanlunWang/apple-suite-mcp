@@ -109,11 +109,13 @@ export function createRemindersModule(client: HelperClient = sharedEventKitClien
       read: async () => await call(serializeListLists()),
     },
     {
-      uriTemplate: "reminders://reminders{?listId,includeCompleted,limit}",
+      uriTemplate: "reminders://reminders",
       name: "reminders-reminders",
-      title: "Reminders",
-      description: "Open reminders, optionally filtered to one list.",
-      read: async (_uri, params) => await call(serializeListReminders(params)),
+      title: "Open reminders",
+      description:
+        "Open (incomplete) reminders across all lists, as JSON. To filter by " +
+        "list or include completed ones, use the reminders_list tool.",
+      read: async () => await call(serializeListReminders({})),
     },
   ];
 

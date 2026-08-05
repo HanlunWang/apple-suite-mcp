@@ -70,15 +70,10 @@ export function createContactsModule(client: HelperClient = sharedContactsClient
     },
   ];
 
-  const resources: ResourceDef[] = [
-    {
-      uriTemplate: "contacts://search{?query,limit}",
-      name: "contacts-search",
-      title: "Contact search",
-      description: "Contacts matching a name query, as JSON.",
-      read: async (_uri, params) => await call(serializeSearchContacts(params)),
-    },
-  ];
+  // Contacts exposes no resource: a search without a query is meaningless as
+  // browsable context, and the contacts_search tool covers the parameterized
+  // case with a properly typed schema.
+  const resources: ResourceDef[] = [];
 
   return {
     id: "contacts",

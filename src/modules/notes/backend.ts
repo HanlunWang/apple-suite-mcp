@@ -14,12 +14,12 @@ export const ListNotesInput = z.object({
     .max(300)
     .optional()
     .describe("Restrict to one folder (name from notes_list_folders). Default: all notes."),
-  limit: z.number().int().min(1).max(200).default(50).describe("Max notes returned. Hard cap 200."),
+  limit: z.coerce.number().int().min(1).max(200).default(50).describe("Max notes returned. Hard cap 200."),
 });
 
 export const SearchNotesInput = z.object({
   query: z.string().min(1).max(500).describe("Text to find in note titles or bodies."),
-  limit: z.number().int().min(1).max(200).default(25).describe("Max results. Hard cap 200."),
+  limit: z.coerce.number().int().min(1).max(200).default(25).describe("Max results. Hard cap 200."),
 });
 
 export const GetNoteInput = z.object({

@@ -84,11 +84,13 @@ export function createMailModule(client: HelperClient = sharedMailClient()): App
 
   const resources: ResourceDef[] = [
     {
-      uriTemplate: "mail://unread{?limit}",
+      uriTemplate: "mail://unread",
       name: "mail-unread",
       title: "Unread mail",
-      description: "Unread inbox messages (metadata only) as JSON.",
-      read: async (_uri, params) => await call(serializeListUnread(params)),
+      description:
+        "Unread inbox messages (metadata only) as JSON. For bodies or a " +
+        "different limit, use the mail_list_unread tool.",
+      read: async () => await call(serializeListUnread({})),
     },
   ];
 

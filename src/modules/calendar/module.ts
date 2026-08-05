@@ -112,11 +112,19 @@ export function createCalendarModule(client: HelperClient = sharedEventKitClient
       read: async () => await call(serializeListCalendars()),
     },
     {
-      uriTemplate: "calendar://events{?from,to,limit}",
+      uriTemplate: "calendar://events",
       name: "calendar-events",
-      title: "Calendar events",
-      description: "Events in a time range (from/to as ISO 8601 date-times).",
-      read: async (_uri, params) => await call(serializeListEvents(params)),
+      title: "Calendar events (next 7 days)",
+      description:
+        "Events from now through the next 7 days, as JSON. For an arbitrary " +
+        "range use the calendar_list_events tool.",
+      read: async () => {
+        const now = new Date();
+        const week = new Date(now.getTime() + 7 * 24 * 60 * 60_000);
+        return await call(
+          serializeListEvents({ from: now.toISOString(), to: week.toISOString() }),
+        );
+      },
     },
   ];
 

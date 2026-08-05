@@ -16,7 +16,7 @@ export const SearchPlacesInput = z.object({
     })
     .optional()
     .describe("Optional anchor. The server never looks up the user's own location."),
-  limit: z.number().int().min(1).max(50).default(10).describe("Max results. Hard cap 50."),
+  limit: z.coerce.number().int().min(1).max(50).default(10).describe("Max results. Hard cap 50."),
 });
 
 export const DirectionsInput = z.object({

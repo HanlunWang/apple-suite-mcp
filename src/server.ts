@@ -8,6 +8,8 @@
  *    (remote sessions get the minimal surface — see registry RegisterOptions)
  */
 
+import { realpathSync } from "node:fs";
+import { pathToFileURL } from "node:url";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { type AppConfig, ConfigError, loadConfig } from "./config.ts";
@@ -56,8 +58,21 @@ async function main(): Promise<void> {
   logger.info("server.ready", { name: SERVER_NAME, version: SERVER_VERSION });
 }
 
-// Only start when executed directly (not when imported by tests/CLI).
-if (import.meta.url === `file://${process.argv[1]}`) {
+/** True when this module is the process entry point. `import.meta.url` is
+ *  percent-encoded and symlink-resolved while argv[1] is neither, so both
+ *  sides must be normalized — otherwise an install path containing a space
+ *  (or reached through a symlink) silently skips startup entirely. */
+function isEntryPoint(): boolean {
+  const argv1 = process.argv[1];
+  if (!argv1) return false;
+  try {
+    return import.meta.url === pathToFileURL(realpathSync(argv1)).href;
+  } catch {
+    return false;
+  }
+}
+
+if (isEntryPoint()) {
   main().catch((err: unknown) => {
     // Log under "error"/"hint" — the "message" key is redacted by design
     // (it is reserved for user-content fields like message bodies).

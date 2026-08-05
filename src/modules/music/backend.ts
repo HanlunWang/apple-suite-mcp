@@ -7,7 +7,7 @@ import { z } from "zod";
 
 export const SearchTracksInput = z.object({
   query: z.string().min(1).max(500).describe("Text to match against track, artist, or album."),
-  limit: z.number().int().min(1).max(100).default(25).describe("Max results. Hard cap 100."),
+  limit: z.coerce.number().int().min(1).max(100).default(25).describe("Max results. Hard cap 100."),
 });
 
 export const PlayTrackInput = z.object({

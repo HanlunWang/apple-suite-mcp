@@ -129,25 +129,47 @@ export async function registerEnabledModules(
       continue;
     }
 
-    const mod = await loader();
+    // A module whose native backend is missing (helper not built yet) must
+    // not take down the whole server — skip it and keep the rest running.
+    let mod: AppModule;
+    try {
+      mod = await loader();
+    } catch (err) {
+      logger.error("registry.module_unavailable", {
+        module: id,
+        error: (err as Error).message,
+      });
+      continue;
+    }
     const configuredMode = cfg.modules[id]?.mode ?? "read";
     const mode = remote && !allowRemoteWrite ? "read" : configuredMode;
     summary.modules.push(id);
 
     for (const res of mod.resources(mode)) {
+      // A URI with no RFC 6570 expression is a CONCRETE resource: register it
+      // as a plain URI so it appears in resources/list. Templates registered
+      // without a list callback are deliberately absent from that listing —
+      // clients discover them through resources/templates/list instead.
+      const isTemplate = res.uriTemplate.includes("{");
+      const target = isTemplate
+        ? new ResourceTemplate(res.uriTemplate, { list: undefined })
+        : res.uriTemplate;
+
       server.registerResource(
         res.name,
-        new ResourceTemplate(res.uriTemplate, { list: undefined }),
+        target as never,
         {
           title: res.title ?? res.name,
           description: res.description,
           mimeType: res.mimeType ?? "application/json",
         },
-        async (uri, params) => {
+        (async (uri: URL, params: Record<string, unknown>) => {
           if (!perSession.take("session") || !perTool.take(`res:${res.name}`)) {
             throw new Error(`rate limit exceeded for resource "${res.name}"`);
           }
-          const data = await res.read(uri, params as Record<string, unknown>);
+          // Template variables always arrive as strings (RFC 6570 expansion);
+          // the backends coerce them. A concrete resource gets no params.
+          const data = await res.read(uri, params ?? {});
           // Content read from Apple apps is untrusted input to the model
           // (DESIGN.md §5.4) — label it so clients/models can treat it as data.
           const payload = { _untrusted: true, data };
@@ -160,7 +182,8 @@ export async function registerEnabledModules(
               },
             ],
           };
-        },
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        }) as any,
       );
       summary.resources.push(res.name);
     }
