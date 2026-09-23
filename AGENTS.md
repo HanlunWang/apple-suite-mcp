@@ -1,4 +1,8 @@
-# CLAUDE.md — Development guide for Claude Code
+# AGENTS.md — Development guide for Claude Code and Codex
+
+## Maintaining these instructions
+
+AGENTS.md is the single source for Claude Code and Codex; both read it directly. Do not add a CLAUDE.md here: it would stop Claude Code from reading this file. Requests to update CLAUDE.md or project rules mean editing this AGENTS.md, or its explicitly delegated reference. Do not maintain a second rule body or rename actual model/provider names when adapting instructions for another agent.
 
 This repository is an **Apple suite MCP connector**, built from scratch. The
 authoritative design is [`DESIGN.md`](./DESIGN.md) — **read it before writing
