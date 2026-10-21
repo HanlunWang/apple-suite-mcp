@@ -53,6 +53,11 @@ after. 1.0.0 was tagged but never published to npm; these land on top of it.
 - Deduplicated helper-path resolution and the `HelperRequest` type; removed
   dead code and unified the backends' `ping` version strings (net −85 lines).
 
+### Security
+- `@modelcontextprotocol/sdk` 1.30.0 → 1.32.1 (high-severity advisory for
+  ≤1.31.0); lockfile refresh of transitive `proxy-addr` and `fast-uri`.
+  `npm audit` is clean.
+
 ## [1.0.0] — 2026-08-05
 
 First stable release. Ten Apple app modules, all disabled by default, each
